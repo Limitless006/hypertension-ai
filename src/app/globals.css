@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-cairo);
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Pulse Glow Animation for Alert */
+@keyframes emergencyGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.8);
+  }
+}
+
+.emergency-alert-glow {
+  animation: emergencyGlow 2s infinite;
+}
+
+/* Markdown styling inside chat messages */
+.prose-medical h1, .prose-medical h2, .prose-medical h3 {
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.prose-medical h3 {
+  font-size: 1.1rem;
+}
+.prose-medical p {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+.prose-medical ul, .prose-medical ol {
+  padding-right: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.prose-medical li {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+.prose-medical strong {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+.prose-medical table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+.prose-medical th, .prose-medical td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+}
+.prose-medical th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+}
