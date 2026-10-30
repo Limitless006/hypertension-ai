@@ -1,0 +1,349 @@
+import { MEDICAL_KNOWLEDGE_BASE } from "../data/medical-knowledge.ts";
+import { findMatchingQuestion } from "../data/questions-bank.ts";
+
+// بناء دستور الأوامر والتعليمات البرمجية الصارمة للمساعد الذكي
+export const SYSTEM_INSTRUCTION = `
+أنت "نبض الأمان" - المساعد الطبي الذكي المتخصص حصرياً في ارتفاع ضغط الدم وصحة القلب والشرايين والتغذية المرتبطة بهما، مبني بدقة إكلينيكية وفق أحدث أدلة وبروتوكولات:
+1. منظمة الصحة العالمية (WHO)
+2. جمعية القلب الأمريكية والكلية الأمريكية لأمراض القلب (AHA / ACC)
+3. الجمعية الأوروبية لأمراض القلب (ESC / ESH)
+4. المعهد الوطني للقلب والرئة والدم - معاهد الصحة الوطنية الأمريكية (NIH / NHLBI)
+5. مايو كلينك للتعليم والبحوث الطبية (Mayo Clinic)
+6. إرشادات وزارة الصحة العراقية (Iraqi MOH)
+
+### القواعد الإرشادية والطبية الصارمة (Strict Clinical & Ethical Guidelines):
+
+1. **المرجعية المعرفية الحصرية والتوثيق الدائم بالمصدر:**
+   - استند في كل إجاباتك حصراً وبدقة إلى الموسوعة الطبية المرجعية المرفقة أدناه.
+   - وثق دائماً المرجع الرسمي بجانب كل فقرة أو توصية (مثال: "وفقاً لمنظمة الصحة العالمية WHO..."، "حسب إرشادات جمعية القلب الأمريكية AHA..."، "بناءً على الجمعية الأوروبية لأمراض القلب ESC..."، "وفقاً لدليل حمية DASH من معهد الصحة الوطني NIH..."، أو "وفقاً لـ Mayo Clinic..."، أو "حسب بروتوكول وزارة الصحة العراقية").
+
+2. **الحماية الأخلاقية الصارمة (مضاد لفخ التدريسي / Anti-Prescription Trap):**
+   - **يُمنع منعاً باتاً ومطلقاً** كتابة أي وصفة علاجية لأي مريض، أو تسمية دواء مخصص لحالة المستخدم، أو تحديد أو تعديل أي جرعة دوائية رقمية (مثل 5 ملغ أو 10 ملغ).
+   - إذا طلب المستخدم دواءً لحالته أو جرعة محددة، أو سأل هل يمكنه إيقاف دوائه:
+     * ارفض بلباقة وحزم قطعي إعطاء وصفة أو تحديد جرعة شخصية.
+     * اشرح السبب العلمي فقط واستند إلى منظمة الصحة العالمية WHO: "تحديد الدواء المناسب والجرعة الآمنة يتطلب فحصاً سريرياً مباشراً وتقييم وظائف الكلى (الكراتينين) والكبد وتخطيط القلب وتحاليل الشوارد (الأملاح)."
+     * حذر من خطورة التوقف التلقائي عن الدواء (خطر فرط ضغط الدم الارتدادي Rebound Hypertension والجلطات المفاجئة).
+     * وجّه المستخدم فوراً لمراجعة طبيبه المعالج أو الصيدلي السريري.
+
+3. **بروتوكول الطوارئ والأزمات الحادة (Emergency Protocol):**
+   - إذا ذكر المستخدم قراءة ضغط انقباضي أعلى من 180 أو انبساطي أعلى من 120 (Hypertensive Crisis)، أو ذكر أعراضاً خطرة (ألم أو ضغط بالصدر، ضيق تنفس حاد، خدر أو شلل نصفي بالوجه أو الأطراف، ثقل أو صعوبة بالنطق، تشوش مفاجئ بالرؤية، أو صداع عنيف كالصاعقة):
+     * **ابدأ إجابتك فوراً وبأول سطر بتحذير أحمر عاجل وبارز:**
+       "🚨 **تحذير طوارئ عاجل: هذه الحالة تصنف كأزمة ارتفاع ضغط دم طارئة (Hypertensive Crisis)**"
+     * وجّهه فوراً للاتصال بالإسعاف (997 في السعودية / 122 في العراق / 911 دولياً) أو التوجه فوراً لأقرب قسم طوارئ في مستشفى دون أي تأخير، والجلوس بهدوء وتجنب أي انفعال.
+
+4. **مقارنة التصنيف الإكلينيكي لقراءات الضغط (AHA vs ESC):**
+   - إذا سُئلت عن قراءة في نطاق 130-139 / 80-89 ملم زئبق (مثل قراءة 135/85):
+     * وضّح بذكاء واحترافية أنها تُصنف كـ **"مرحلة أولى" (Stage 1 Hypertension)** حسب النظام الأمريكي (AHA / ACC 2017).
+     * بينما تُصنف كـ **"طبيعي مرتفع" (High-Normal Blood Pressure)** حسب النظام الأوروبي (ESC / ESH) ولا تبدأ مرحلة المرض عندهم إلا من عتبة 140/90 ملم زئبق فأكثر.
+     * اشرح سبب الفرق: النظام الأمريكي يهدف للتحفيز والتدخل الوقائي المبكر، بينما النظام الأوروبي يتحفظ لتجنب الإفراط في التشخيص والتطبيب (Overdiagnosis & Overtreatment) للأشخاص الأصحاء.
+
+5. **حصر التخصص والاعتذار الذكي (Scope Enforcement):**
+   - إذا سأل المستخدم سؤالاً خارج نطاق ضغط الدم وصحة القلب والأوعية والتغذية ونمط الحياة المرتبط بهما (مثال: أمراض العظام، الجلدية، مشاكل الشعر، أسئلة عامة أو تقنية أو برمجة أو سياسة):
+     * اعتذر بلباقة واقتضب:
+       "أنا مساعد طبي متخصص حصرياً في ارتفاع ضغط الدم ومضاعفاته وصحة القلب وفق معايير WHO و AHA و ESC و Mayo Clinic ووزارة الصحة العراقية، ولا يمكنني الإجابة عن مواضيع خارج هذا النطاق الطبي لضمان أعلى معايير السلامة والدقة الإكلينيكية."
+
+6. **إلزامية توثيق المصدر في ختام كل إجابة (Citation Enforcement):**
+   - **يجب حتماً وبدون استثناء** أن تختم كل إجابة بفقرة واضحة تحت العنوان:
+     📚 **المصدر المعتمد لهذه المعلومة:**
+     وتذكر اسم المنظمة الرسمية (مثل: منظمة الصحة العالمية WHO / جمعية القلب الأمريكية AHA / الجمعية الأوروبية لأمراض القلب ESC / المعهد الوطني للصحة NIH / مايو كلينك Mayo Clinic / وزارة الصحة العراقية).
+
+7. **أسلوب الطرح والتنسيق الإكلينيكي الاحترافي:**
+   - تحدث بلغة عربية فصحى طبية دقيقة ومبسطة، بأسلوب علمي رصين ومطمئن وداعم.
+   - استخدم تنسيق Markdown الغني: عناوين فرعية واضحة، نقاط محددة، وجداول مقارنة عند اللزوم لتسهيل قراءة المعلومات.
+   - اختم إجابتك ببيان إخلاء المسؤولية الطبي التثقيفي.
+
+---
+### الموسوعة الطبية المرجعية المعتمدة (Medical Knowledge Base):
+${MEDICAL_KNOWLEDGE_BASE}
+`;
+
+/**
+ * دالة تحويل الأرقام العربية المشرقية (٠-٩) إلى أرقام لاتينية قياسية (0-9)
+ */
+export function normalizeArabicNumerals(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString())
+    .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString());
+}
+
+/**
+ * فحص شروط أزمة الطوارئ الحادة (Hypertensive Crisis / Emergency)
+ */
+export function checkEmergencyCondition(query: string): {
+  isEmergency: boolean;
+  reason: "reading" | "symptoms" | null;
+  sys?: number;
+  dia?: number;
+} {
+  const normalized = normalizeArabicNumerals(query).toLowerCase();
+
+  // فحص أرقام ضغط الدم
+  const numbers = normalized.match(/\d+/g);
+  if (numbers && numbers.length >= 2) {
+    const sys = parseInt(numbers[0], 10);
+    const dia = parseInt(numbers[1], 10);
+    if (sys >= 60 && sys <= 260 && dia >= 40 && dia <= 160) {
+      if (sys > 180 || dia > 120) {
+        return { isEmergency: true, reason: "reading", sys, dia };
+      }
+    }
+  }
+
+  // فحص الأعراض الطارئة الحادة (بما في ذلك اللهجات والمفردات الشائعة)
+  const hasChestPain =
+    (normalized.includes("ألم") ||
+      normalized.includes("الم") ||
+      normalized.includes("ضغط") ||
+      normalized.includes("وجع") ||
+      normalized.includes("نغزات") ||
+      normalized.includes("حرقة") ||
+      normalized.includes("قبضة") ||
+      normalized.includes("عاصر")) &&
+    (normalized.includes("صدر") || normalized.includes("الصدر") || normalized.includes("قلب") || normalized.includes("القلب"));
+
+  const hasDyspnea =
+    (normalized.includes("ضيق") ||
+      normalized.includes("صعوبة") ||
+      normalized.includes("كتمة") ||
+      normalized.includes("انقطاع") ||
+      normalized.includes("ما اقدر") ||
+      normalized.includes("ما أقدر")) &&
+    (normalized.includes("تنفس") || normalized.includes("نفس") || normalized.includes("التنفس"));
+
+  const hasNeuroSymptoms =
+    normalized.includes("تنميل") ||
+    normalized.includes("خدر") ||
+    normalized.includes("شلل") ||
+    normalized.includes("فالج") ||
+    ((normalized.includes("ثقل") || normalized.includes("ثقيل") || normalized.includes("ثكيل") || normalized.includes("صعوبة")) &&
+      (normalized.includes("لسان") || normalized.includes("نطق") || normalized.includes("كلام"))) ||
+    normalized.includes("لساني ثقيل") ||
+    normalized.includes("لسانه ثقيل") ||
+    normalized.includes("لساني ثكيل") ||
+    normalized.includes("لسانه ثكيل");
+
+  const hasSevereVisionOrHeadache =
+    ((normalized.includes("تشوش") ||
+      normalized.includes("زغللة") ||
+      normalized.includes("غباش") ||
+      normalized.includes("فقدان")) &&
+      (normalized.includes("رؤية") || normalized.includes("عين") || normalized.includes("بصر") || normalized.includes("النظر"))) ||
+    ((normalized.includes("صداع") || normalized.includes("راسي يوجعني")) &&
+      (normalized.includes("صاعقة") || normalized.includes("عنيف") || normalized.includes("فظيع") || normalized.includes("شديد جدا") || normalized.includes("مفاجئ")));
+
+  if (hasChestPain || hasDyspnea || hasNeuroSymptoms || hasSevereVisionOrHeadache) {
+    return { isEmergency: true, reason: "symptoms" };
+  }
+
+  return { isEmergency: false, reason: null };
+}
+
+/**
+ * فحص محاولات استدراج المساعد لوصف دواء أو تحديد جرعة أو التوقف عن العلاج
+ */
+export function checkPrescriptionTrap(query: string): {
+  isTrap: boolean;
+  type: "prescription" | "dosage" | "stop_med" | null;
+} {
+  const q = normalizeArabicNumerals(query).toLowerCase();
+
+  const isAskingPrescription =
+    (q.includes("اكتب") ||
+      q.includes("كتبلي") ||
+      q.includes("صف لي") ||
+      q.includes("اوصف لي") ||
+      q.includes("أوصف لي") ||
+      q.includes("اوصفلي") ||
+      q.includes("أوصفلي") ||
+      q.includes("عطني") ||
+      q.includes("اعطني") ||
+      q.includes("انطيني") ||
+      q.includes("إنطيني") ||
+      q.includes("روشتة") ||
+      q.includes("وصفة") ||
+      q.includes("افضل دواء") ||
+      q.includes("أفضل دواء") ||
+      q.includes("الدواء المناسب") ||
+      q.includes("العلاج المناسب") ||
+      q.includes("وش اخذ") ||
+      q.includes("ماذا اخذ") ||
+      q.includes("ماذا آخذ") ||
+      q.includes("شنو اخذ") ||
+      q.includes("شنو أخذ") ||
+      q.includes("تنصحني اخذ") ||
+      q.includes("رشح لي") ||
+      q.includes("اقترح لي") ||
+      q.includes("صرف لي")) &&
+    (q.includes("دواء") || q.includes("علاج") || q.includes("حبوب") || q.includes("أقراص") || q.includes("اقراص") || q.includes("روشتة"));
+
+  const isAskingDosage =
+    q.includes("جرعة") ||
+    q.includes("كم ملغ") ||
+    q.includes("كم ملغرام") ||
+    q.includes("ازيد الجرعة") ||
+    q.includes("أزيد الجرعة") ||
+    q.includes("انقص الجرعة") ||
+    q.includes("أنقص الجرعة") ||
+    q.includes("تعديل الجرعة") ||
+    q.includes("كم حبة") ||
+    q.includes("كم أخذ") ||
+    q.includes("كم اخذ");
+
+  const isAskingStopMed =
+    (q.includes("اوقف") ||
+      q.includes("أوقف") ||
+      q.includes("اترك") ||
+      q.includes("اقطع") ||
+      q.includes("أقطع") ||
+      q.includes("ابطل") ||
+      q.includes("أبطل") ||
+      q.includes("استغني عن") ||
+      q.includes("أستغني عن")) &&
+    (q.includes("دواء") || q.includes("علاج") || q.includes("حبوب") || q.includes("أقراص") || q.includes("اقراص"));
+
+  if (isAskingStopMed) return { isTrap: true, type: "stop_med" };
+  if (isAskingDosage) return { isTrap: true, type: "dosage" };
+  if (isAskingPrescription) return { isTrap: true, type: "prescription" };
+
+  return { isTrap: false, type: null };
+}
+
+/**
+ * فحص الأسئلة الخارجة عن التخصص الطبي الدقيق
+ */
+export function checkOutOfScope(query: string): { isOutOfScope: boolean } {
+  const q = normalizeArabicNumerals(query).toLowerCase().trim();
+  const outOfScopeKeywords = [
+    "برمجة", "كود", "جافا", "بايثون", "سياسة", "انتخابات", "شعر رأس", "تساقط شعر",
+    "تبييض بشرة", "مكياج", "كورة", "كرة قدم", "مباراة", "سيارات", "سيارة", "ميكانيكا", "عظام ركبة",
+  ];
+  return { isOutOfScope: outOfScopeKeywords.some((w) => q.includes(w)) };
+}
+
+/**
+ * إجبار تنسيق الإجابة الطبية على الختام بفقرة المصدر المعتمد
+ */
+export function formatResponseWithCitation(reply: string, sources: string[]): string {
+  let cleaned = reply.trim();
+
+  // فحص ما إذا كانت الفقرة موجودة بالفعل
+  if (
+    cleaned.includes("📚 **المصدر المعتمد لهذه المعلومة:**") ||
+    cleaned.includes("📚 المصدر المعتمد لهذه المعلومة:") ||
+    cleaned.includes("المصدر المعتمد لهذه المعلومة:")
+  ) {
+    return cleaned;
+  }
+
+  const defaultSources = [
+    "منظمة الصحة العالمية (WHO)",
+    "جمعية القلب الأمريكية (AHA)",
+  ];
+
+  const sourceItems = sources && sources.length > 0 ? sources : defaultSources;
+  const list = sourceItems.map((s) => (s.startsWith("-") ? s : `- ${s}`)).join("\n");
+
+  return `${cleaned}\n\n---\n📚 **المصدر المعتمد لهذه المعلومة:**\n${list}`;
+}
+
+/**
+ * محرك الفحص الطبي المحلي والرد الذكي المعتمد (Local Clinical Engine & Fallback)
+ * يعمل بكفاءة 100% بدون انترنت عند تعثر الاتصال الخارجي
+ */
+export function getLocalFallbackAnswer(query: string): { reply: string; sources: string[] } {
+  const q = normalizeArabicNumerals(query).toLowerCase().trim();
+
+  // 1. فحص كشف فخ وصف الأدوية أو الجرعات أو إيقاف الدواء (Anti-Prescription & Dosage Trap)
+  const trapCheck = checkPrescriptionTrap(q);
+  if (trapCheck.isTrap) {
+    const rawReply = `🛡️ **تنبيه وإرشاد طبي حاسم (ميثاق الأمان الإكلينيكي):**
+بصفتي مساعداً طبياً ذكياً مدرباً وفق معايير **منظمة الصحة العالمية (WHO)** والجمعية الأمريكية للقلب (AHA)، **أعتذر بحزم عن وصف أي دواء أو ترشيح علاج من الصيدلية، وأرفض رفضاً قاطعاً تحديد جرعة شخصية أو كتابة وصفة علاجية**.
+
+### الشرح والتوجيه العلمي المعتمد:
+1. **ضرورة التقييم السريري الفردي:** تؤكد منظمة الصحة العالمية (WHO) أن اختيار صنف الدواء الخافض للضغط (مثل حاصرات الكالسيوم CCB كالأملوديبين، أو مثبطات ACE كالانالابريل، أو مدرات البول) وتحديد جرعته بدقة يستوجب فحصاً طبياً مباشراً وتقييم وظائف الكلى (الكراتينين و eGFR) والكبد وتخطيط القلب وتحاليل الشوارد (البوتاسيوم والصوديوم).
+2. **شرح علمي لفئات الأدوية (تثقيفي عام دون وصف):** تعمل أدوية الضغط بآليات فيزيولوجية معقدة لتقليل المقاومة الوعائية أو حجم السوائل، ووصف أي علاج دون تشخيص مخبري قد يسبب هبوطاً حاداً أو ضرراً كلوياً.
+3. **خطر الارتفاع الارتدادي الحاد (Rebound Hypertension):** إيقاف الدواء أو تعديل الجرعات أو تناول علاج عشوائي دون استشارة الطبيب يعرض المريض لقفزة حادة في ضغط الدم تهدد بنوبات قلبية وسكتات دماغية مميتة.
+
+⚠️ **التوجيه الإلزامي:** يرجى التوجه لمراجعة الطبيب المعالج أو أقرب مركز صحي أو صيدلي إكلينيكي فوراً لتقييم حالتك السريرية وقياس ضغطك بدقة وتحديد خطتك العلاجية المناسبة بأمان.`;
+    const sources = [
+      "منظمة الصحة العالمية (WHO - بروتوكول العلاج الدوائي للبالغين)",
+      "جمعية القلب الأمريكية (AHA)",
+      "مايو كلينك (Mayo Clinic)",
+    ];
+    return {
+      reply: formatResponseWithCitation(rawReply, sources),
+      sources,
+    };
+  }
+
+  // 2. فحص أزمة الطوارئ الحادة (>180/120 أو أعراض تلف الأعضاء)
+  const emergencyCheck = checkEmergencyCondition(q);
+  if (emergencyCheck.isEmergency) {
+    const readingDetails =
+      emergencyCheck.sys && emergencyCheck.dia
+        ? `بناءً على القراءة المسجلة (${emergencyCheck.sys} / ${emergencyCheck.dia} مم زئبق)`
+        : `بناءً على الأعراض الخطيرة التي ذكرتها`;
+
+    const rawReply = `🚨 **تحذير طوارئ عاجل: هذه الحالة تصنف كأزمة ارتفاع ضغط دم طارئة (Hypertensive Crisis)**
+${readingDetails}، تُصنف الحالة طبياً وفق بروتوكولات **جمعية القلب الأمريكية (AHA)** و **منظمة الصحة العالمية (WHO)** و **Mayo Clinic** كأزمة طارئة تستوجب الذهاب الفوري لأقرب مستشفى دون تأخير!
+
+### التوجيهات الطبية الفورية للحياة:
+1. 📞 **اتصل بالإسعاف فوراً (997 في السعودية / 122 في العراق / 911 دولياً)** أو اطلب نقلك فوراً إلى أقرب قسم طوارئ في مستشفى.
+2. 🪑 **اجلس بهدوء تام:** استرخِ بوضعية الجلوس مع إسناد الظهر وتجنب الاستلقاء التام أو الانفعال، وتنفس ببطء وعمق.
+3. ⛔ **لا تنتظر انخفاض الضغط بنفسك:** لا تتناول جرعات إضافية عشوائية من الأدوية دون استشارة طاقم الإسعاف.
+4. ⚠️ **علامات الخطر الحرجة:** وجود ألم بالصدر أو ثقل باللسان أو ضيق نفس أو تنميل هي علامات قطعية على تأثر الأعضاء الحيوية (Hypertensive Emergency) وتستدعي عناية مركزة فورية.`;
+    const sources = [
+      "جمعية القلب الأمريكية (AHA - Hypertensive Crisis Guidelines)",
+      "منظمة الصحة العالمية (WHO)",
+      "مايو كلينك (Mayo Clinic Emergency Protocol)",
+    ];
+    return {
+      reply: formatResponseWithCitation(rawReply, sources),
+      sources,
+    };
+  }
+
+  // 3. فحص أسئلة خارج النطاق الطبي (Scope Enforcement)
+  if (checkOutOfScope(q).isOutOfScope) {
+    const rawReply = `أهلاً بك. بصفتي **نبض الأمان**، أنا مساعد طبي ذكي متخصص حصرياً في **ارتفاع ضغط الدم وصحة القلب والشرايين والتغذية المرتبطة بهما** وفق إرشادات منظمة الصحة العالمية (WHO)، جمعية القلب الأمريكية (AHA)، والجمعية الأوروبية لأمراض القلب (ESC).
+
+أعتذر منك بلباقة عن عدم الإجابة عن مواضيع خارج هذا التخصص الطبي الدقيق، وذلك لضمان تقديم أعلى معايير السلامة والموثوقية العلمية. يسعدني الإجابة عن أي استفسار يخص ضغط دمك أو قراءاتك أو نمط حياتك الصحي!`;
+    const sources = ["نبض الأمان — ميثاق التخصص الطبي المعتمد (WHO & AHA & ESC)"];
+    return {
+      reply: formatResponseWithCitation(rawReply, sources),
+      sources,
+    };
+  }
+
+  // 4. مطابقة بنك الأسئلة المعتمد (Questions Bank Matcher)
+  const matchedQ = findMatchingQuestion(q);
+  if (matchedQ) {
+    return {
+      reply: formatResponseWithCitation(matchedQ.modelAnswer, matchedQ.sources),
+      sources: matchedQ.sources,
+    };
+  }
+
+  // 5. الرد العام الشامل
+  const rawReply = `أهلاً بك في منصة **نبض الأمان** الطبية الذكية.
+بناءً على أحدث إرشادات **منظمة الصحة العالمية (WHO)**، **جمعية القلب الأمريكية (AHA)**، **الجمعية الأوروبية لأمراض القلب (ESC)**، و **مايو كلينك (Mayo Clinic)**:
+
+ارتفاع ضغط الدم هو استمرار تدفق الدم ضد جدران الشرايين بمستوى 130/80 ملم زئبق أو أكثر (أو 140/90 حسب النظام الأوروبي). للتحكم والوقاية المثلى، توصي الإرشادات بـ:
+1. **المراقبة المنزلية الدورية:** قياس الضغط بعد 5 دقائق استرخاء مع تجنب الكافيين والتدخين قبلها بـ 30 دقيقة.
+2. **حمية DASH:** الإكثار من الخضار والفواكه والحبوب الكاملة وتقليل الصوديوم دون 2300 ملغ (والمثالي 1500 ملغ يومياً لمرضى الضغط).
+3. **النشاط البدني:** ممارسة 150 دقيقة أسبوعياً من الرياضة الهوائية كالمشي السريع، وتجنب رفع الأثقال الشديدة أو حبس النفس.
+4. **الالتزام الدوائي:** عدم تغيير أو إيقاف الأدوية الموصوفة دون مراجعة الطبيب لتفادي الارتفاع الارتدادي المفاجئ.
+
+كيف يمكنني مساعدتك تحديداً؟ يمكنك إدخال قراءتك لتحليلها أو اختيار أحد الأسئلة المعتمدة في الشريط العلوي!`;
+  const defaultSources = [
+    "منظمة الصحة العالمية (WHO)",
+    "جمعية القلب الأمريكية (AHA)",
+    "الجمعية الأوروبية لأمراض القلب (ESC)",
+    "مايو كلينك (Mayo Clinic)",
+  ];
+  return {
+    reply: formatResponseWithCitation(rawReply, defaultSources),
+    sources: defaultSources,
+  };
+}

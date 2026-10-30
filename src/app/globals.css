@@ -7,6 +7,14 @@
 
   * {
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -17,7 +25,32 @@
     text-align: right;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
+
+  /* Remove spin buttons on number inputs for clean mobile look */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* Hide scrollbar for clean swipeable mobile tabs */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Scrollbar */
@@ -70,6 +103,9 @@
   font-size: 0.925rem;
   line-height: 1.75;
   color: #1e293b;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  word-wrap: break-word;
 }
 
 .prose-medical h1 {
@@ -158,4 +194,30 @@
 
 .prose-medical tr:last-child td {
   border-bottom: none;
+}
+
+/* Print & Export Media Styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  header, aside, .no-print, form, button, .quick-questions-panel {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .chat-container {
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+  .chat-messages {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .prose-medical {
+    font-size: 11pt !important;
+  }
 }

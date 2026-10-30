@@ -1,155 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { MEDICAL_KNOWLEDGE_BASE } from "@/data/medical-knowledge";
-
-// بناء التعليمات البرمجية الصارمة للمساعد الذكي
-const SYSTEM_INSTRUCTION = `
-أنت "نبض الأمان" - المساعد الطبي الذكي المتخصص حصرياً في ارتفاع ضغط الدم وصحة القلب والأوعية الدموية، مبني وفق أحدث إرشادات منظمة الصحة العالمية (WHO) وجمعية القلب الأمريكية (AHA) ومايو كلينك (Mayo Clinic).
-
-### القواعد الإرشادية والطبية الصارمة (Strict Rules):
-1. **المرجعية المعرفية الحصرية**: استند في كل إجاباتك حصراً وبدقة متناهية إلى المعرفة الطبية المعتمدة المرفقة أدناه.
-2. **منع الوصفات الدوائية والجرعات منعاً باتاً**:
-   - لا تكتب أي وصفة طبية لأي مريض تحت أي ظرف.
-   - لا تحدد جرعات رقمية (مثل 5 ملغ أو 10 ملغ) ولا تعدل جرعات الأدوية للمستخدمين.
-   - وجّه المريض دائماً لمراجعة طبيبه المعالج أو الصيدلي لتحديد العلاج الأنسب لحالته الفردية.
-3. **بروتوكول الطوارئ والأزمات الحادة (Emergency Protocol)**:
-   - إذا ذكر المستخدم قراءة ضغط انقباضي أعلى من 180 أو انبساطي أعلى من 120 (أزمة ارتفاع ضغط الدم Hypertensive Crisis):
-     * يجب أن تضع تحذيراً بارزاً وواضحاً في بداية الرد: "⚠️ تنبيه طوارئ عاجل: هذه القراءة تصنف كأزمة ارتفاع ضغط دم طارئة".
-     * وجّه المستخدم لإعادة القياس بعد 5 دقائق بهدوء، والاتصال الفوري بالإسعاف (997 في السعودية / 911 دولياً) أو التوجه لأقرب قسم طوارئ إذا رافقه (ألم بالصدر، ضيق نفس، تنميل، خدر بالوجه أو الأطراف، تشوش بالرؤية أو صداع شديد غير معتاد).
-4. **نطاق التخصص والاعتذار اللبق**:
-   - إذا كان سؤال المستخدم خارج نطاق ضغط الدم وصحة القلب والشرايين والتغذية المرتبطة بهما (مثال: أمراض العظام، الجلدية، مشاكل الشعر، أسئلة عامة أو تقنية)، اعتذر بلباقة واحترافية:
-     "أعتذر منك بلباقة، بصفتي مساعداً طبياً متخصصاً في ارتفاع ضغط الدم وصحة القلب والأوعية الدموية فقط، لا يمكنني الإجابة عن مواضيع خارج هذا التخصص لضمان دقة وسلامة المعلومات الطبية المقدمة."
-5. **أسلوب الطرح والتنسيق**:
-   - تحدث بلغة عربية فصحى طبية دقيقة ومبسطة للمريض، بأسلوب داعم ومطمئن.
-   - استخدم تنسيق Markdown (نقاط، عناوين، خط عريض) لتسهيل القراءة السريعة.
-   - اختم إجاباتك بتذكير ودي بأن هذا المحتوى تثقيفي ولا يغني عن الفحص السريري مع الطبيب.
-
----
-### الموسوعة الطبية المرجعية المعتمدة (Medical Knowledge Base):
-${MEDICAL_KNOWLEDGE_BASE}
-`;
-
-// إجابات احتياطية ذكية وموثوقة مبنية بالكامل على الملف الطبي في حال انقطاع الشبكة الخارجية
-function getLocalFallbackAnswer(query: string): string {
-  const q = query.toLowerCase();
-
-  // فحص أرقام القراءات (مثال: 190 أو 185 أو 130 أو 140)
-  const numbers = query.match(/\\d+/g);
-  if (numbers && numbers.length >= 2) {
-    const sys = parseInt(numbers[0], 10);
-    const dia = parseInt(numbers[1], 10);
-    if (sys > 180 || dia > 120) {
-      return `⚠️ **تحذير طوارئ عاجل (أزمة ارتفاع ضغط دم طارئة - Hypertensive Crisis):**
-قراءتك (${sys}/${dia}) تعتبر قراءة حرجة جداً وفق تصنيف جمعية القلب الأمريكية (AHA).
-- **التوجيه الفوري:** يرجى الجلوس بهدوء وإعادة القياس بعد 5 دقائق.
-- إذا بقيت القراءة أعلى من 180/120، أو إذا كنت تشعر بأي من الأعراض التالية:
-  * ألم أو ضغط في الصدر.
-  * صعوبة أو ضيق في التنفس.
-  * خدر أو تنميل في الوجه أو أحد الأطراف أو صعوبة بالكلام.
-  * تشوش مفاجئ في الرؤية أو صداع حاد كالصاعقة.
-🚨 **توجه فوراً إلى أقرب قسم طوارئ أو اتصل بالإسعاف (997 / 911) دون تردد.**
-*تنبيه: لا تنتظر حتى ينخفض الضغط بنفسه.*`;
-    }
-  }
-
-  if (q.includes("قاتل") || q.includes("صامت") || q.includes("silent")) {
-    return `### لماذا يسمى ارتفاع ضغط الدم بالقاتل الصامت؟
-وفقاً لـ **منظمة الصحة العالمية (WHO)** و **Mayo Clinic**، يطلق على ارتفاع ضغط الدم لقب **"القاتل الصامت" (The Silent Killer)** للأسباب التالية:
-1. **انعدام الأعراض المبكرة:** يتطور المرض تدريجياً لسنوات طويلة دون أن يشعر المريض بأي ألم أو أعراض تحذيرية واضحة في أغلب الحالات.
-2. **الضرر التراكمي المستمر:** بينما يشعر المريض بأنه بصحة جيدة، يواصل ضغط الدم المرتفع إتلاف الجدران الداخلية للشرايين الحساسة.
-3. **المضاعفات المفاجئة:** في كثير من الأحيان، يكون أول عرض ظاهر للمرض هو حدوث جلطة دماغية مفاجئة، أزمة قلبية حادة، أو قصور كلوي متقدم.
-لذلك توصي الإرشادات الطبية بالفحص الدوري المنتظم لضغط الدم سنوياً على الأقل.`;
-  }
-
-  if (q.includes("داش") || q.includes("dash") || q.includes("غذائي") || q.includes("حمية")) {
-    return `### نظام DASH الغذائي (Dietary Approaches to Stop Hypertension)
-هو نظام غذائي علاجي موصى به بقوة من **جمعية القلب الأمريكية (AHA)** و **Mayo Clinic**:
-- **الأطعمة المستهدفة:**
-  * التركيز على الخضروات والفواكه الطازجة الغنية بالبوتاسيوم والمغنيسيوم.
-  * الحبوب الكاملة (الشوفان، القمح الكامل، الأرز البني).
-  * البقوليات والمكسرات النيئة.
-  * منتجات الألبان خالية أو قليلة الدسم، والأسماك والدواجن منزوعة الجلد.
-- **الممنوعات والحدود:**
-  * تقليل اللحوم الحمراء الدهنية والسكريات والحلويات والمشروبات الغازية.
-  * خفض الأطعمة المعالجة والمعلبات الغنية بالصوديوم الخفي.
-- **التأثير الطبي:** أثبتت الدراسات السريرية أن الالتزام بنظام DASH يخفض الضغط الانقباضي بمقدار **8 إلى 14 ملم زئبق**، وهو ما يعادل تأثير دواء كامل!`;
-  }
-
-  if (q.includes("صوديوم") || q.includes("ملح") || q.includes("salt")) {
-    return `### الحدود المسموحة للصوديوم والملح لمرضى الضغط:
-بحسب إرشادات **جمعية القلب الأمريكية (AHA)**:
-1. **الحد الأقصى المسموح يومياً:** **2,300 ملغ من الصوديوم** (ما يعادل ملعقة شاي صغيرة واحدة من ملح الطعام 5 غرام).
-2. **الحد المثالي المستهدف:** **1,500 ملغ من الصوديوم يومياً** لأغلب البالغين المصابين بارتفاع ضغط الدم، مما يحقق انخفاضاً ملحوظاً في قراءات الضغط.
-💡 *نصيحة طبية من Mayo Clinic:* أكثر من 70% من الصوديوم الذي نستهلكه يأتي من الوجبات السريعة، الأطعمة الجاهزة، الشوربات المعلبة، والخبز، وليس من ملح الطاولة المضاف أثناء الطهي.`;
-  }
-
-  if (q.includes("كركديه") || q.includes("ثوم") || q.includes("أعشاب") || q.includes("طب بديل")) {
-    return `### حقيقة الأعشاب والطب البديل (الكركديه والثوم):
-وفقاً للمراجعات الطبية المعتمدة في **Mayo Clinic**:
-1. **الكركديه:** تشير بعض الأبحاث إلى أن مشروب الكركديه (البارد أو الدافئ) يمتلك تأثيراً خفيفاً مدراً للبول وخافضاً للضغط (حوالي 2-7 ملم زئبق).
-2. **الثوم:** يحتوي على مركب الأليسين ومضادات الأكسدة التي تساعد على استرخاء الأوعية الدموية بشكل طفيف.
-3. **القاعدة الذهبية المعتمدة طبياً:**
-   * هذه الأعشاب تُعد **عوامل مساعدة فقط** ونمط حياة تكميلي، و**لا تغني إطلاقاً عن الدواء الموصوف**.
-   * التوقف عن أدوية الضغط واستبدالها بالأعشاب يعرض المريض لخطر الإصابة بنوبات قلبية وجلطات دماغية خطيرة.
-   * يجب دائماً استشارة الطبيب لتجنب أي تداخلات دوائية (مثل تفاعل الثوم مع مسيلات الدم).`;
-  }
-
-  if (q.includes("شروط") || q.includes("قياس") || q.includes("منزل") || q.includes("أخطاء")) {
-    return `### شروط القياس المنزلي الصحيح لضغط الدم (Mayo Clinic & AHA):
-1. **الراحة والاسترخاء:** الجلوس بهدوء تام لمدة 5 دقائق قبل بدء القياس في غرفة هادئة.
-2. **تجنب المنبهات:** الامتناع عن التدخين، الكافيين، وممارسة الرياضة لمدة 30 دقيقة قبل الفحص.
-3. **تفريغ المثانة:** المثانة الممتلئة ترفع الضغط مؤقتاً بما يصل إلى 10-15 ملم زئبق.
-4. **وضعية الجلوس السليمة:**
-   - الظهر مستقيم ومسنود على الكرسي.
-   - القدمان مستويتان على الأرض (تجنب وضع رجل على رجل نهائياً).
-   - إسناد الذراع على طاولة بحيث تكون الكفة (Cuff) في مستوى القلب تماماً.
-5. **وضع الكفة:** مباشرة على الجلد العاري وليس فوق القميص.
-6. **أخذ قراءتين:** قياس مرتين بينهما دقيقة وحساب المتوسط، ويفضل صباحاً ومساءً.`;
-  }
-
-  if (q.includes("معطف") || q.includes("أبيض") || q.includes("white coat")) {
-    return `### ظاهرة المعطف الأبيض (White Coat Hypertension):
-- **التعريف:** هي حالة يرتفع فيها ضغط الدم عند قياسه داخل العيادة أو المستشفى فقط، بينما يكون طبيعياً تماماً عند قياسه في المنزل.
-- **السبب الطبي:** القلق والتوتر غير الواعي من البيئة الطبية ورؤية الأطباء والأجهزة.
-- **كيف يتم التعامل معها؟**
-  * يقوم الطبيب بطلب مراقبة منزلية دورية موثقة (HBPM) لمدة أسبوعين، أو استخدام جهاز مراقبة الضغط المتنقل لمدة 24 ساعة (ABPM).
-  * هذا الفحص يمنع تشخيص المريض خطأً أو إعطائه أدوية لا يحتاجها فعلياً.`;
-  }
-
-  if (q.includes("أدوية") || q.includes("مدرات") || q.includes("ace") || q.includes("arb") || q.includes("كالسيوم")) {
-    return `### مجموعات أدوية ضغط الدم وآليات عملها:
-1. **مدرات البول الثيازيدية (Diuretics):** تحفز الكلى على التخلص من الصوديوم والماء الفائضين، مما يقلل حجم السائل الدموي ويخفف الضغط على جدران الشرايين.
-2. **مثبطات ACE:** تمنع تكوّن هرمون الأنجيوتنسين 2 (مضيق قوي للأوعية)، فتسترخي الشرايين ويسهل تدفق الدم.
-3. **حاصرات مستقبلات الأنجيوتنسين (ARBs):** تحجب عمل هرمون الأنجيوتنسين على الشرايين مباشرة، وتعد بديلاً لمن يسبب لهم دواء ACE سعالاً جافاً.
-4. **حاصرات قنوات الكالسيوم (CCBs):** تمنع دخول الكالسيوم لخلايا عضلات القلب والشرايين، مما يريح الأوعية ويوسعها.
-⚠️ **تنبيه هام:** لا يمكن وصف أي دواء أو جرعة هنا؛ يقرر الطبيب المعالج فقط الدواء المناسب بناءً على وظائف الكلى والقلب والحالة الصحية.`;
-  }
-
-  // الرد العام المعتمد
-  return `أهلاً بك في منصة **نبض الأمان** الطبية الذكية.
-بناءً على إرشادات **منظمة الصحة العالمية (WHO)** و **جمعية القلب الأمريكية (AHA)** و **Mayo Clinic**:
-ارتفاع ضغط الدم هو القوة المستمرة لتدفق الدم ضد جدران الشرايين بمستوى 130/80 ملم زئبق أو أكثر. للتحكم الأمثل به، ينصح بـ:
-1. مراقبة القراءات المنزلية بانتظام في بيئة مسترخية.
-2. اتباع نظام DASH الغذائي وتقليل الصوديوم دون 2300 ملغ يومياً (والمثالي 1500 ملغ).
-3. ممارسة 150 دقيقة أسبوعياً من الرياضة الهوائية المعتدلة كالمشي السريع.
-4. الالتزام بالخطة العلاجية الدوائية المحددة لك من قبل طبيبك المعالج وعدم إيقافها دون مراجعته.
-
-هل ترغب في تحليل قراءة معينة لضغطك أو الاستفسار عن تفاصيل التغذية أو الرياضة المسموحة؟`;
-}
+import {
+  SYSTEM_INSTRUCTION,
+  checkEmergencyCondition,
+  checkPrescriptionTrap,
+  checkOutOfScope,
+  getLocalFallbackAnswer,
+  formatResponseWithCitation,
+} from "@/lib/chat-engine";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { message, messages } = body;
 
-    // استخراج نص الرسالة الأخيرة وتاريخ المحادثة
+    // استخراج نص الرسالة الأخيرة وسياق المحادثة
     let userPrompt = "";
-    let conversationHistory: { role: "user" | "model" | "system"; parts: { text: string }[] }[] = [];
+    let rawHistory: { role: "user" | "model"; parts: { text: string }[] }[] = [];
 
     if (Array.isArray(messages) && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       userPrompt = lastMsg.content || lastMsg.text || "";
-      conversationHistory = messages.slice(0, -1).map((m: any) => ({
+      rawHistory = messages.slice(0, -1).map((m: any) => ({
         role: (m.role === "assistant" || m.role === "model" ? "model" : "user") as "user" | "model",
         parts: [{ text: m.content || m.text || "" }],
       }));
@@ -159,9 +31,69 @@ export async function POST(req: NextRequest) {
 
     if (!userPrompt || !userPrompt.trim()) {
       return NextResponse.json(
-        { error: "الرجاء إدخال رسالة أو سؤال طبي صالح." },
+        { error: "الرجاء إدخال سؤال أو استفسار طبي صالح." },
         { status: 400 }
       );
+    }
+
+    // تنظيف تاريخ المحادثة وفق متطلبات Gemini API الصارمة:
+    // 1. يجب أن تبدأ المحادثة دائماً بدور 'user' (حذف أي رسائل 'model' سابقة مثل رسالة الترحيب الأولى)
+    while (rawHistory.length > 0 && rawHistory[0].role === "model") {
+      rawHistory.shift();
+    }
+
+    // 2. التحقق من التناوب الصحيح user -> model -> user -> model
+    const conversationHistory: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+    for (const msg of rawHistory) {
+      if (!msg.parts[0]?.text?.trim()) continue;
+      if (conversationHistory.length === 0) {
+        if (msg.role === "user") {
+          conversationHistory.push(msg);
+        }
+      } else {
+        const lastRole = conversationHistory[conversationHistory.length - 1].role;
+        if (lastRole !== msg.role) {
+          conversationHistory.push(msg);
+        } else {
+          // دمج الرسائل المتتالية لنفس الدور
+          conversationHistory[conversationHistory.length - 1].parts[0].text += "\n" + msg.parts[0].text;
+        }
+      }
+    }
+
+    // فحص مسبق محلي لأزمة الطوارئ وحيل الوصفات وخارج النطاق (Deterministic Clinical Guardrails)
+    const emergencyCheck = checkEmergencyCondition(userPrompt);
+    const trapCheck = checkPrescriptionTrap(userPrompt);
+    const scopeCheck = checkOutOfScope(userPrompt);
+
+    // 1. إذا وُجد فخ وصفات أو طلب جرعة، نرد مباشرة بميثاق الأمان الطبي المعتمد
+    if (trapCheck.isTrap) {
+      const fallback = getLocalFallbackAnswer(userPrompt);
+      return NextResponse.json({
+        reply: fallback.reply,
+        sources: fallback.sources,
+        isAiGenerated: false,
+      });
+    }
+
+    // 2. إذا رُصدت أزمة طوارئ حرجة (>180/120 أو أعراض خطرة)، نرد فوراً ببروتوكول الطوارئ المعتمد لإنقاذ الحياة دون تأخير
+    if (emergencyCheck.isEmergency) {
+      const fallback = getLocalFallbackAnswer(userPrompt);
+      return NextResponse.json({
+        reply: fallback.reply,
+        sources: fallback.sources,
+        isAiGenerated: false,
+      });
+    }
+
+    // 3. إذا كان السؤال خارج نطاق التخصص الطبي لضغط الدم، نعتذر بلباقة وفق ميثاق التخصص
+    if (scopeCheck.isOutOfScope) {
+      const fallback = getLocalFallbackAnswer(userPrompt);
+      return NextResponse.json({
+        reply: fallback.reply,
+        sources: fallback.sources,
+        isAiGenerated: false,
+      });
     }
 
     const apiKey =
@@ -170,49 +102,75 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
       "";
 
-    // محاولة الاتصال بـ Gemini API عبر GoogleGenerativeAI
+    // محاولة الاتصال بالذكاء الاصطناعي التوليدي عبر Gemini SDK الرسمي
     if (apiKey && !apiKey.startsWith("YOUR_")) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          systemInstruction: SYSTEM_INSTRUCTION,
-        });
-
+        const modelNames = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
         let aiText = "";
-        if (conversationHistory.length > 0) {
-          const chat = model.startChat({ history: conversationHistory });
-          const result = await chat.sendMessage(userPrompt);
-          aiText = result.response.text();
-        } else {
-          const result = await model.generateContent(userPrompt);
-          aiText = result.response.text();
+
+        for (const modelName of modelNames) {
+          try {
+            const model = genAI.getGenerativeModel({
+              model: modelName,
+              systemInstruction: SYSTEM_INSTRUCTION,
+            });
+
+            if (conversationHistory.length > 0) {
+              const chat = model.startChat({ history: conversationHistory });
+              const result = await chat.sendMessage(userPrompt);
+              aiText = result.response.text();
+            } else {
+              const result = await model.generateContent(userPrompt);
+              aiText = result.response.text();
+            }
+
+            if (aiText && aiText.trim()) {
+              break;
+            }
+          } catch (mErr) {
+            continue;
+          }
         }
 
         if (aiText && aiText.trim()) {
+          let finalReply = aiText.trim();
+
+          const officialSources = [
+            "منظمة الصحة العالمية (WHO)",
+            "جمعية القلب الأمريكية (AHA)",
+            "الجمعية الأوروبية لأمراض القلب (ESC)",
+            "المعهد الوطني للصحة (NIH)",
+            "مايو كلينك (Mayo Clinic)",
+            "وزارة الصحة العراقية (Iraqi MOH)",
+          ];
+
+          // إجبار التوثيق بالمصدر المعتمد في نهاية الإجابة
+          finalReply = formatResponseWithCitation(finalReply, officialSources);
+
           return NextResponse.json({
-            reply: aiText.trim(),
-            sources: ["منظمة الصحة العالمية (WHO)", "جمعية القلب الأمريكية (AHA)", "مايو كلينك (Mayo Clinic)"],
+            reply: finalReply,
+            sources: officialSources,
             isAiGenerated: true,
           });
         }
       } catch (geminiError: any) {
-        console.warn("Gemini API call failed, using verified medical fallback engine:", geminiError?.message || geminiError);
+        console.warn("Gemini API call failed, activating verified clinical knowledge engine:", geminiError?.message || geminiError);
       }
     }
 
-    // الرد الاحتياطي الطبي الموثوق من الموسوعة الطبية المدمجة
-    const fallbackAnswer = getLocalFallbackAnswer(userPrompt);
+    // الاعتماد على المحرك الطبي المعرفي الموثق كمرجع فوري ذكي
+    const fallback = getLocalFallbackAnswer(userPrompt);
     return NextResponse.json({
-      reply: fallbackAnswer,
-      sources: ["منظمة الصحة العالمية (WHO)", "جمعية القلب الأمريكية (AHA)", "مايو كلينك (Mayo Clinic)"],
+      reply: formatResponseWithCitation(fallback.reply, fallback.sources),
+      sources: fallback.sources,
       isAiGenerated: false,
     });
   } catch (error: any) {
-    console.error("Chat API General Error:", error);
+    console.error("Chat API Route Error:", error);
     return NextResponse.json(
       {
-        error: "حدث خطأ أثناء معالجة الاستشارة الطبية.",
+        error: "حدث خطأ غير متوقع أثناء معالجة الاستشارة الطبية.",
         details: error?.message,
       },
       { status: 500 }

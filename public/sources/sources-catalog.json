@@ -1,0 +1,86 @@
+[
+  {
+    "id": "who-factsheet",
+    "organization": "منظمة الصحة العالمية (WHO)",
+    "title": "فرط ضغط الدم - صحيفة الوقائع الرسمية",
+    "englishTitle": "Hypertension Fact Sheet (WHO)",
+    "localPath": "/sources/who-hypertension-factsheet.md",
+    "pdfPath": "/sources/who-hypertension-factsheet.pdf",
+    "officialUrl": "https://www.who.int/ar/news-room/fact-sheets/detail/hypertension",
+    "badge": "مرجع عالمي رئيسي",
+    "description": "وثيقة رسمية تفصل وبائيات المرض (1.4 مليار بالغ مصاب)، عوامل الخطر، الأعراض الطارئة، معايير التشخيص وأهداف الضغط الموصى بها.",
+    "keyTopics": ["القاتل الصامت", "أعراض الارتفاع الشديد", "مضاعفات الأعضاء", "الأهداف العلاجية <140/90 و <130/80"]
+  },
+  {
+    "id": "who-guidelines",
+    "organization": "منظمة الصحة العالمية (WHO)",
+    "title": "دليل العلاج الدوائي لارتفاع ضغط الدم لدى البالغين",
+    "englishTitle": "WHO Guideline for the pharmacological treatment of hypertension in adults",
+    "localPath": "/sources/who-guideline-pharmacological-treatment.md",
+    "pdfPath": "/sources/who-guideline-pharmacological-treatment.pdf",
+    "officialUrl": "https://www.who.int/publications/i/item/9789240033986",
+    "badge": "بروتوكول علاجي معتمد",
+    "description": "الدليل الإرشادي الإكلينيكي لعتبات بدء العلاج الدوائي، فئات أدوية الخط الأول الثلاثة، واستراتيجية العلاج المركب بجرعات منخفضة.",
+    "keyTopics": ["عتبات بدء العلاج الدوائي", "أدوية الخط الأول", "العلاج المركب الثنائي", "فترات المتابعة"]
+  },
+  {
+    "id": "aha-readings",
+    "organization": "جمعية القلب الأمريكية (AHA / ACC)",
+    "title": "جدول تصنيف قراءات ضغط الدم والبروتوكول المنزلي",
+    "englishTitle": "Understanding Blood Pressure Readings & Home BP Protocol (AHA/ACC)",
+    "localPath": "/sources/aha-bp-readings-measurement-protocol.md",
+    "pdfPath": "/sources/aha-bp-readings-measurement-protocol.pdf",
+    "officialUrl": "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings",
+    "badge": "المعيار الذهبي للتصنيف",
+    "description": "الجدول القياسي المعتمد عالمياً لتصنيف قراءات الضغط الخمس، والفرق بين أزمة الطوارئ والملحة، والبروتوكول الصحيح للقياس المنزلي.",
+    "keyTopics": ["جدول الفئات الخمس", "أزمة الضغط >180/120", "قاعدة الـ 30 دقيقة", "المعطف الأبيض والضغط المقنع"]
+  },
+  {
+    "id": "esc-guidelines",
+    "organization": "الجمعية الأوروبية لأمراض القلب (ESC / ESH)",
+    "title": "إرشادات تشخيص وإدارة فرط ضغط الدم الشرياني والمقارنة مع AHA",
+    "englishTitle": "ESC/ESH Guidelines for the Management of Arterial Hypertension",
+    "localPath": "/sources/esc-hypertension-guidelines.md",
+    "pdfPath": "/sources/esc-hypertension-guidelines.pdf",
+    "officialUrl": "https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Arterial-Hypertension-Management-of",
+    "badge": "المعيار الأوروبي المقارن",
+    "description": "الدليل الإرشادي الأوروبي المعتمد لتشخيص الضغط (عتبة 140/90)، وتصنيف قراءة 130-139/85-89 كـ 'طبيعي مرتفع High-Normal' مقارنة بنظام AHA الأمريكي.",
+    "keyTopics": ["عتبة التشخيص 140/90", "طبيعي مرتفع High-Normal", "الفرق بين AHA و ESC", "عتبات القياس المنزلي والمتنقل"]
+  },
+  {
+    "id": "nih-dash",
+    "organization": "المعهد الوطني للصحة (NIH / NHLBI)",
+    "title": "دليل خفض ضغط الدم بحمية داش (DASH Diet)",
+    "englishTitle": "Your Guide to Lowering Your Blood Pressure with DASH (NIH/NHLBI)",
+    "localPath": "/sources/nih-dash-diet-guide.md",
+    "pdfPath": "/sources/nih-dash-diet-guide.pdf",
+    "officialUrl": "https://www.nhlbi.nih.gov/education/dash-eating-plan",
+    "badge": "التغذية العلاجية المثبتة",
+    "description": "الدليل الإكلينيكي المعتمد لحمية DASH، حصص المجموعات الغذائية، حدود الصوديوم (2300 ملغ و 1500 ملغ)، ومصادر الصوديوم الخفي.",
+    "keyTopics": ["حصص حمية DASH", "حد الصوديوم 1500 ملغ", "البوتاسيوم والمغنيسيوم", "الصوديوم الخفي بالمعلبات"]
+  },
+  {
+    "id": "mayo-clinic",
+    "organization": "مايو كلينك (Mayo Clinic)",
+    "title": "الدليل الطبي الشامل لارتفاع ضغط الدم ومضاعفاته",
+    "englishTitle": "Comprehensive Clinical Guide to Hypertension (Mayo Clinic)",
+    "localPath": "/sources/mayo-clinic-hypertension-guide.md",
+    "pdfPath": "/sources/mayo-clinic-hypertension-guide.pdf",
+    "officialUrl": "https://www.mayoclinic.org/ar/diseases-conditions/high-blood-pressure",
+    "badge": "مرجع إكلينيكي رائد",
+    "description": "مرجع طبي سريري يغطي فيزيولوجيا المرض، الفرق بين الأولي والثانوي، مخاطر التوقف المفاجئ عن الدواء، وتفنيد خرافات الأعشاب.",
+    "keyTopics": ["الضغط الأولي والثانوي", "تصلب الشرايين وقصور القلب", "خطر التوقف المفاجئ", "تفنيد خرافات الكركديه والثوم"]
+  },
+  {
+    "id": "iraqi-moh",
+    "organization": "وزارة الصحة العراقية (Iraqi MOH / WHO Iraq)",
+    "title": "الدليل الإرشادي الوطني لإدارة ارتفاع ضغط الدم في الرعاية الصحية الأولية",
+    "englishTitle": "National Clinical Practice Guidelines for Management of Hypertension in PHCCs (Iraq MOH)",
+    "localPath": "/sources/iraqi-moh-hypertension-guideline.md",
+    "pdfPath": "/sources/iraqi-moh-hypertension-guideline.pdf",
+    "officialUrl": "https://moh.gov.iq",
+    "badge": "البروتوكول الوطني العراقي",
+    "description": "بروتوكول الرعاية الأولية المعتمد في المراكز الصحية العراقية لمسح البالغين فوق 18 عاماً، العلاج التدرجي بالأدوية الأساسية، والمتابعة الدورية وإحالة الطوارئ.",
+    "keyTopics": ["المسح الروتيني في PHCC", "الأدوية الأساسية العراقية", "عيادات الأمراض المزمنة NCD", "معايير الإحالة للمستشفيات"]
+  }
+]

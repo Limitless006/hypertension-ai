@@ -6,10 +6,8 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias = config.resolve.alias || {};
-    config.resolve.alias["@google/generative-ai"] = path.resolve(__dirname, "src/lib/gemini.ts");
-    return config;
+  experimental: {
+    cpus: 1,
   },
 };
 
