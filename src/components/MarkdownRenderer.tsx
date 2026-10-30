@@ -36,8 +36,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
       const rows = tableRows.slice(1).filter((r) => !r.every((cell) => cell.includes("---")));
 
       renderedElements.push(
-        <div key={`table-${renderedElements.length}`} className="my-3 overflow-x-auto rounded-xl border border-slate-200 shadow-2xs max-w-full -webkit-overflow-scrolling-touch">
-          <table className="w-full text-right text-xs md:text-sm min-w-[280px]">
+        <div key={`table-${renderedElements.length}`} className="my-3 block w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 shadow-2xs touch-scroll">
+          <table className="w-full text-right text-xs md:text-sm min-w-[260px]">
             <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200">
               <tr>
                 {header.map((col, idx) => (

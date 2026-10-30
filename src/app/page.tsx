@@ -206,6 +206,40 @@ export default function HomePage() {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsSourcesModalOpen(false);
+      }
+    };
+    if (isSourcesModalOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isSourcesModalOpen]);
+
+  // Normalize Eastern Arabic-Indic numerals (٠١٢٣٤٥٦٧٨٩) and Persian numerals to ASCII (0-9)
+  const normalizeDigits = (val: string): string => {
+    const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+    const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
+    return val
+      .replace(/[٠-٩]/g, (d) => arabicDigits.indexOf(d).toString())
+      .replace(/[۰-۹]/g, (d) => persianDigits.indexOf(d).toString());
+  };
+
+  const handleSystolicChange = (raw: string) => {
+    const cleaned = normalizeDigits(raw).replace(/[^0-9]/g, "");
+    setSystolic(cleaned === "" ? "" : Math.min(300, Number(cleaned)));
+    setHasAnalyzed(false);
+  };
+
+  const handleDiastolicChange = (raw: string) => {
+    const cleaned = normalizeDigits(raw).replace(/[^0-9]/g, "");
+    setDiastolic(cleaned === "" ? "" : Math.min(200, Number(cleaned)));
+    setHasAnalyzed(false);
+  };
+
   // Handle explicit "تحليل القراءة" action
   const handleAnalyzeReading = () => {
     const sys = Number(systolic) || 0;
@@ -322,11 +356,13 @@ export default function HomePage() {
     }
   };
 
-  // Scroll helper for smooth mobile navigation
+  // Scroll helper for smooth mobile navigation with dynamic header offset
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      const yOffset = -90;
+      const headerEl = document.querySelector("header");
+      const headerHeight = headerEl ? headerEl.offsetHeight : 120;
+      const yOffset = -(headerHeight + 14);
       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
@@ -418,18 +454,14 @@ export default function HomePage() {
             </a>
           </div>
         </div>
-      </header>
 
-      {/* Main Grid Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5">
-
-        {/* Mobile Quick Navigation Bar (Sticky chips for fast section navigation on mobile) */}
-        <div className="lg:hidden sticky top-[60px] z-30 bg-slate-50/95 backdrop-blur-md pb-2 pt-1 -mx-3 px-3 border-b border-slate-200/80 mb-3 shadow-2xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+        {/* Mobile Quick Navigation Bar (Integrated inside sticky header for zero desync and perfect mobile UX) */}
+        <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 backdrop-blur-sm px-3.5 py-1.5 w-full">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-scroll py-0.5 max-w-7xl mx-auto">
             <button
               type="button"
               onClick={() => scrollToSection("checker-section")}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white text-blue-800 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-white text-blue-800 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer min-h-[36px]"
             >
               <Activity className="w-3.5 h-3.5 text-blue-600" />
               <span>🩺 فاحص الضغط</span>
@@ -437,7 +469,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => scrollToSection("questions-section")}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer min-h-[36px]"
             >
               <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
               <span>❓ الـ 15 سؤالاً</span>
@@ -445,7 +477,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => scrollToSection("chat-section")}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer min-h-[36px]"
             >
               <Bot className="w-3.5 h-3.5 text-cyan-600" />
               <span>💬 المستشار الذكي</span>
@@ -453,13 +485,17 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => scrollToSection("sources-section")}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer min-h-[36px]"
             >
               <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
               <span>📚 المصادر (6)</span>
             </button>
           </div>
         </div>
+      </header>
+
+      {/* Main Grid Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5">
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
@@ -513,7 +549,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Number Inputs */}
+              {/* Number Inputs with Arabic-Indic & ASCII Numeral Support */}
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">
@@ -521,16 +557,11 @@ export default function HomePage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      min={60}
-                      max={260}
+                      type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={systolic}
-                      onChange={(e) => {
-                        setSystolic(e.target.value === "" ? "" : Number(e.target.value));
-                        setHasAnalyzed(false);
-                      }}
+                      onChange={(e) => handleSystolicChange(e.target.value)}
                       className="w-full text-center text-2xl font-black px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/70"
                       placeholder="120"
                     />
@@ -549,16 +580,11 @@ export default function HomePage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      min={40}
-                      max={160}
+                      type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={diastolic}
-                      onChange={(e) => {
-                        setDiastolic(e.target.value === "" ? "" : Number(e.target.value));
-                        setHasAnalyzed(false);
-                      }}
+                      onChange={(e) => handleDiastolicChange(e.target.value)}
                       className="w-full text-center text-2xl font-black px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/70"
                       placeholder="80"
                     />
@@ -591,12 +617,12 @@ export default function HomePage() {
 
               {/* Visual Segmented Color Meter */}
               <div className="mt-3.5 pt-2 border-t border-slate-100">
-                <div className="grid grid-cols-5 text-center text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">
+                <div className="grid grid-cols-5 text-center text-[8.5px] sm:text-[10px] text-slate-500 font-bold mb-1 gap-0.5">
                   <span className={currentLiveCategory.urgencyLevel === 'normal' ? 'text-emerald-700 font-black' : ''}>طبيعي</span>
                   <span className={currentLiveCategory.urgencyLevel === 'elevated' ? 'text-amber-700 font-black' : ''}>مرتفع</span>
                   <span className={currentLiveCategory.urgencyLevel === 'stage1' ? 'text-orange-700 font-black' : ''}>مرحلة 1</span>
                   <span className={currentLiveCategory.urgencyLevel === 'stage2' ? 'text-red-700 font-black' : ''}>مرحلة 2</span>
-                  <span className={currentLiveCategory.urgencyLevel === 'crisis' ? 'text-rose-700 font-black animate-pulse' : ''}>أزمة طارئة</span>
+                  <span className={`leading-none flex items-center justify-center ${currentLiveCategory.urgencyLevel === 'crisis' ? 'text-rose-700 font-black animate-pulse' : ''}`}>أزمة طارئة</span>
                 </div>
                 <div className="grid grid-cols-5 gap-1 h-2.5 rounded-full overflow-hidden bg-slate-100 p-0.5">
                   <div className={`h-full rounded-sm transition-all ${currentLiveCategory.urgencyLevel === 'normal' ? 'bg-emerald-500 ring-2 ring-emerald-300' : 'bg-emerald-200'}`} />
@@ -670,18 +696,18 @@ export default function HomePage() {
                 {BP_CATEGORIES.map((cat) => (
                   <div
                     key={cat.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors"
+                    className="flex flex-col xs:flex-row xs:items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors gap-1"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: cat.color }}
                       />
-                      <span className="font-bold text-slate-800 text-[11px]">
+                      <span className="font-bold text-slate-800 text-[11px] truncate">
                         {cat.nameArabic}
                       </span>
                     </div>
-                    <span className="font-mono text-slate-500 font-semibold text-[11px] dir-ltr text-left">
+                    <span className="font-mono text-slate-500 font-semibold text-[10px] sm:text-[11px] dir-ltr text-left shrink-0">
                       {cat.systolicRange} / {cat.diastolicRange}
                     </span>
                   </div>
@@ -731,7 +757,7 @@ export default function HomePage() {
               </div>
 
               {/* 4 Categorized Tabs with smooth horizontal swipe */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-100 scrollbar-none w-full max-w-full">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-100 scrollbar-none touch-scroll w-full max-w-full">
                 {QUESTION_TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   const count = QUESTIONS_BANK.filter(q => q.categoryId === tab.id).length;
@@ -770,10 +796,10 @@ export default function HomePage() {
                       scrollToSection("chat-section");
                     }}
                     disabled={isLoading}
-                    className="w-full sm:w-auto max-w-full text-right text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200/90 text-slate-700 px-3 py-2 rounded-xl transition-all flex items-center justify-between gap-2 group cursor-pointer active:scale-[0.98] disabled:opacity-50 min-h-[38px]"
+                    className="w-full sm:w-auto max-w-full text-right text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200/90 text-slate-800 px-3.5 py-2.5 rounded-xl transition-all flex items-start sm:items-center justify-between gap-2.5 group cursor-pointer active:scale-[0.98] disabled:opacity-50 min-h-[44px]"
                   >
-                    <span className="truncate flex-1 font-medium min-w-0">{q.question}</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-blue-600 shrink-0" />
+                    <span className="line-clamp-2 sm:line-clamp-none font-medium flex-1 min-w-0 leading-snug break-words">{q.question}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-blue-600 shrink-0 mt-0.5 sm:mt-0" />
                   </button>
                 ))}
               </div>
@@ -852,7 +878,7 @@ export default function HomePage() {
 
                       {/* Message Bubble */}
                       <div
-                        className={`max-w-[88%] sm:max-w-[80%] min-w-0 break-words [overflow-wrap:anywhere] rounded-2xl p-3 sm:p-4 shadow-2xs ${
+                        className={`max-w-[calc(100%-44px)] sm:max-w-[80%] min-w-0 break-words [overflow-wrap:anywhere] rounded-2xl p-3 sm:p-4 shadow-2xs ${
                           isUser
                             ? "bg-blue-600 text-white rounded-tl-none font-medium"
                             : msg.isEmergency
@@ -949,7 +975,7 @@ export default function HomePage() {
                     className="px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95 min-h-[44px]"
                     aria-label="إرسال السؤال"
                   >
-                    <span className="hidden xs:inline">إرسال</span>
+                    <span className="hidden sm:inline">إرسال</span>
                     <Send className="w-4 h-4 -scale-x-100" />
                   </button>
                 </form>
@@ -1008,18 +1034,32 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-200/80 space-y-1.5">
-                  {src.localDocs.map((doc, dIdx) => (
-                    <a
-                      key={dIdx}
-                      href={doc.path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] text-blue-700 hover:text-blue-900 font-semibold flex items-center justify-between group gap-2"
-                    >
-                      <span className="truncate flex-1 min-w-0">📄 {doc.name}</span>
-                      <ArrowUpRight className="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0" />
-                    </a>
-                  ))}
+                  {src.localDocs.map((doc, dIdx) => {
+                    const isPdf = doc.path.endsWith(".pdf");
+                    return (
+                      <a
+                        key={dIdx}
+                        href={doc.path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-blue-700 hover:text-blue-900 font-semibold flex items-center justify-between group gap-2 py-1 px-1.5 rounded-lg hover:bg-blue-50/80 transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`px-1.5 py-0.2 text-[9px] font-bold rounded shrink-0 ${
+                              isPdf
+                                ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                : "bg-blue-100 text-blue-700 border border-blue-200"
+                            }`}
+                          >
+                            {isPdf ? "PDF" : "MD"}
+                          </span>
+                          <span className="truncate min-w-0">{doc.name}</span>
+                        </span>
+                        <ArrowUpRight className="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </a>
+                    );
+                  })}
                   <a
                     href={src.officialUrl}
                     target="_blank"
@@ -1040,7 +1080,12 @@ export default function HomePage() {
       {/* 5. VERIFIED SOURCES MODAL (Modal Dialog for Judges & Detailed Review) */}
       {/* ============================================================== */}
       {isSourcesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/60 backdrop-blur-xs no-print animate-in fade-in duration-200">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/60 backdrop-blur-xs no-print animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsSourcesModalOpen(false);
+          }}
+        >
           <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92dvh] sm:max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
             
             {/* Modal Header */}
@@ -1099,21 +1144,32 @@ export default function HomePage() {
 
                     <div className="pt-2.5 sm:pt-3 border-t border-slate-100 space-y-1.5 sm:space-y-2">
                       <div className="text-[10px] sm:text-[11px] font-bold text-slate-700">الملفات الموثقة المحفوظة محلياً:</div>
-                      {source.localDocs.map((doc, idx) => (
-                        <a
-                          key={idx}
-                          href={doc.path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between text-[11px] sm:text-xs px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-50 hover:bg-blue-50 text-blue-700 font-semibold border border-slate-200 transition-colors gap-2"
-                        >
-                          <span className="flex items-center gap-1.5 min-w-0">
-                            <FileText className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">{doc.name}</span>
-                          </span>
-                          <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
-                        </a>
-                      ))}
+                      {source.localDocs.map((doc, idx) => {
+                        const isPdf = doc.path.endsWith(".pdf");
+                        return (
+                          <a
+                            key={idx}
+                            href={doc.path}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between text-[11px] sm:text-xs px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-50 hover:bg-blue-50 text-blue-700 font-semibold border border-slate-200 transition-colors gap-2"
+                          >
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={`px-1.5 py-0.5 text-[9px] font-bold rounded shrink-0 ${
+                                  isPdf
+                                    ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                    : "bg-blue-100 text-blue-700 border border-blue-200"
+                                }`}
+                              >
+                                {isPdf ? "PDF" : "MD"}
+                              </span>
+                              <span className="truncate">{doc.name}</span>
+                            </span>
+                            <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+                          </a>
+                        );
+                      })}
 
                       <a
                         href={source.officialUrl}
