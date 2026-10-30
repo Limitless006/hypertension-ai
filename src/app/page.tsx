@@ -15,22 +15,23 @@ import {
   HelpCircle,
   Salad,
   Pill,
-  Info,
   CheckCircle2,
   Trash2,
   ArrowUpRight,
   User,
   Bot,
-  Sliders,
-  ChevronRight,
+  Copy,
+  Check,
   Heart,
-  FileText
+  Sliders,
+  Zap,
+  Info
 } from "lucide-react";
 import {
   BP_CATEGORIES,
   classifyBloodPressure,
   QUICK_QUESTIONS_TABS,
-  BloodPressureCategory
+  BloodPressureCategory,
 } from "@/data/medical-knowledge";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
@@ -42,30 +43,41 @@ interface Message {
   isEmergency?: boolean;
 }
 
+// Quick reading presets for judge demonstration
+const PRESETS = [
+  { label: "طبيعي", sys: 115, dia: 75, color: "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100" },
+  { label: "مرتفع طفيفاً", sys: 125, dia: 78, color: "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100" },
+  { label: "مرحلة 1", sys: 135, dia: 85, color: "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100" },
+  { label: "مرحلة 2", sys: 148, dia: 94, color: "bg-red-50 text-red-700 border-red-300 hover:bg-red-100" },
+  { label: "أزمة طارئة", sys: 195, dia: 125, color: "bg-rose-100 text-rose-800 border-rose-400 font-bold hover:bg-rose-200" },
+];
+
 export default function HomePage() {
   // Blood Pressure Checker state
   const [systolic, setSystolic] = useState<number | "">(120);
   const [diastolic, setDiastolic] = useState<number | "">(80);
   const [activeTab, setActiveTab] = useState<string>("basics");
 
+  // Copy state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   // Chatbot State
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome-1",
       role: "assistant",
-      content: `مرحباً بك في **نبض الأمان** 🩺 — منصتك الطبية الذكية والمتخصصة في التوعية بارتفاع ضغط الدم وصحة القلب.
+      content: `مرحباً بك في **نبض الأمان** 🩺 — المساعد الطبي الذكي لارتفاع ضغط الدم وصحة القلب.
 
-أنا مساعدك الطبي الذكي، مدرب وفق أحدث الإرشادات السريرية الصادرة عن:
+أنا مستشارك الطبي الافتراضي، تم تدريبي ومراجعتي علمياً وفق أحدث البروتوكولات المعتمدة من:
 - 🏛️ **منظمة الصحة العالمية (WHO)**
 - ❤️ **جمعية القلب الأمريكية (AHA)**
 - 🏥 **مايو كلينك (Mayo Clinic)**
 
-يمكنك طرح أي استفسار حول:
-* تفسير قراءات ضغط الدم وتشخيص الحالات.
-* الشروط المعتمدة للقياس المنزلي الدقيق.
-* نظام DASH الغذائي والتحكم بالصوديوم والملح.
-* أدوية الضغط وآليات عملها، وحقيقة الأعشاب والطب البديل.
-* فحص أرقام قراءتك فوراً عبر الأداة الجانبية!`,
+### كيف يمكنني مساعدتك اليوم؟
+1. **فحص فوري لقراءاتك:** أدخل قراءتك في الأداة التفاعلية الجانبية لمعرفة تصنيفها المعتمد.
+2. **استشارات التغذية ونمط الحياة:** استفسر عن حمية DASH، كمية الصوديوم، الرياضة، وحقيقة الأعشاب.
+3. **فهم الأدوية والأعراض:** آلية عمل مدرات البول ومثبطات ACE، والوقاية من مضاعفات الكلى والعيون.
+4. **الأسئلة السريعة:** اختر أي سؤال من الشريط العلوي للإرسال المباشر!`,
       timestamp: "الآن",
     },
   ]);
@@ -146,9 +158,9 @@ export default function HomePage() {
       const errorMessage: Message = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content: `⚠️ نعتذر، واجهنا صعوبة مؤقتة في معالجة طلبك: ${
+        content: `⚠️ واجهنا صعوبة مؤقتة في معالجة طلبك: ${
           err.message || "يرجى المحاولة مجدداً."
-        }\n\n*تذكير*: إذا كنت تشعر بأعراض حرجة أو كان ضغطك أعلى من 180/120، يرجى التوجه فوراً لأقرب قسم طوارئ.`,
+        }\n\n*تنبيه*: إذا كان ضغطك أعلى من 180/120 أو رافقه ألم في الصدر أو ضيق تنفس، توجه فوراً للطوارئ أو اتصل بالإسعاف (997).`,
         timestamp: new Date().toLocaleTimeString("ar-SA", {
           hour: "2-digit",
           minute: "2-digit",
@@ -164,8 +176,15 @@ export default function HomePage() {
   const handleAskAboutReading = () => {
     const sys = Number(systolic) || 0;
     const dia = Number(diastolic) || 0;
-    const prompt = `قمت بقياس ضغط دمي وسجلت قراءة ${sys} انقباضي و ${dia} انبساطي (${sys}/${dia} ملم زئبق). كيف تصنف حالتي وفق المعايير الطبية المعتمدة، وما هي الخطوات والتوجيهات الموصى بها لي؟`;
+    const prompt = `سجلت قراءة ضغط دم بمقدار ${sys} انقباضي و ${dia} انبساطي (${sys}/${dia} ملم زئبق). كيف تصنف حالتي وفق المعايير الطبية المعتمدة، وما هي النصائح والإجراءات الواجب اتباعها؟`;
     handleSendMessage(prompt);
+  };
+
+  // Copy Message to clipboard
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Clear Chat
@@ -176,7 +195,7 @@ export default function HomePage() {
           id: `welcome-${Date.now()}`,
           role: "assistant",
           content:
-            "تم بدء محادثة جديدة. يمكنك إدخال قراءاتك أو طرح أي سؤال حول صحة ضغط الدم.",
+            "تم بدء محادثة جديدة. يمكنك إدخال قراءاتك في الفاحص الجانبي أو طرح أي استفسار طبي حول ضغط الدم.",
           timestamp: "الآن",
         },
       ]);
@@ -184,46 +203,51 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-slate-100/70 to-slate-200/50 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white" dir="rtl">
       {/* Top Professional Medical Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-3">
+          {/* Logo & Branding */}
           <div className="flex items-center gap-3.5">
-            <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-100">
-              <HeartPulse className="w-6 h-6 animate-pulse" />
+            <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20 ring-4 ring-blue-50 shrink-0">
+              <HeartPulse className="w-6 h-6 animate-heartbeat text-white" />
               <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
               </span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>نبض الأمان</span>
-                  <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/70 px-2 py-0.5 rounded-full">
-                    Hypertension AI
-                  </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
+                  نبض الأمان
                 </h1>
+                <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                  Hypertension AI
+                </span>
+                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hidden sm:inline-block">
+                  مسابقة الابتكار الطبي والتقني
+                </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium hidden sm:block">
+              <p className="text-xs text-slate-500 font-medium">
                 المساعد الطبي الذكي لارتفاع ضغط الدم • مستند إلى أدلة WHO و Mayo Clinic و AHA
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>معتمد علمياً لمسابقة الابتكار</span>
-            </span>
+          {/* Header Action Badges & Emergency Call */}
+          <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>WHO & Mayo Clinic Guidelines</span>
+            </div>
 
             <a
               href="tel:997"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 transition-all cursor-pointer active:scale-95"
               title="الاتصال بالإسعاف لحالات الطوارئ الحرجة"
             >
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>طوارئ (997)</span>
+              <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
+              <span>طوارئ الضغط (997)</span>
             </a>
           </div>
         </div>
@@ -237,9 +261,9 @@ export default function HomePage() {
           {/* ============================================================== */}
           <aside className="lg:col-span-4 space-y-5 order-2 lg:order-1">
             {/* 1. Interactive Tool: Instant Blood Pressure Checker */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 overflow-hidden relative">
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 relative overflow-hidden">
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-blue-50 text-blue-700">
                     <Activity className="w-5 h-5" />
                   </div>
@@ -248,13 +272,35 @@ export default function HomePage() {
                       فاحص قراءة الضغط الفوري
                     </h2>
                     <p className="text-xs text-slate-500">
-                      تحليل سريري آني بالألوان المعتمدة
+                      تحليل سريري فوري وفق معايير AHA 2026
                     </p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                  AHA 2026
+                <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
+                  مباشر
                 </span>
+              </div>
+
+              {/* Quick Presets for Competition Demonstration */}
+              <div className="mt-3.5">
+                <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+                  أمثلة سريعة للتجربة الفورية:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESETS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setSystolic(p.sys);
+                        setDiastolic(p.dia);
+                      }}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold transition-all cursor-pointer ${p.color}`}
+                    >
+                      {p.label} ({p.sys}/{p.dia})
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Number Inputs */}
@@ -274,15 +320,15 @@ export default function HomePage() {
                           e.target.value === "" ? "" : Number(e.target.value)
                         )
                       }
-                      className="w-full text-center text-xl font-extrabold px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/50"
+                      className="w-full text-center text-2xl font-black px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/70"
                       placeholder="120"
                     />
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">
                       SYS
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 block text-center">
-                    ملم زئبق
+                  <span className="text-[10px] text-slate-400 block text-center font-medium">
+                    ملم زئبق (Systolic)
                   </span>
                 </div>
 
@@ -301,16 +347,34 @@ export default function HomePage() {
                           e.target.value === "" ? "" : Number(e.target.value)
                         )
                       }
-                      className="w-full text-center text-xl font-extrabold px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/50"
+                      className="w-full text-center text-2xl font-black px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/70"
                       placeholder="80"
                     />
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">
                       DIA
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 block text-center">
-                    ملم زئبق
+                  <span className="text-[10px] text-slate-400 block text-center font-medium">
+                    ملم زئبق (Diastolic)
                   </span>
+                </div>
+              </div>
+
+              {/* Visual Segmented Status Meter */}
+              <div className="mt-3.5 pt-2">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1">
+                  <span>طبيعي</span>
+                  <span>مرتفع</span>
+                  <span>مرحلة 1</span>
+                  <span>مرحلة 2</span>
+                  <span>أزمة طارئة</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1 h-2 rounded-full overflow-hidden bg-slate-100">
+                  <div className={`h-full transition-all ${currentCategory.urgencyLevel === 'normal' ? 'bg-emerald-500 ring-2 ring-emerald-300' : 'bg-emerald-200'}`} />
+                  <div className={`h-full transition-all ${currentCategory.urgencyLevel === 'elevated' ? 'bg-amber-500 ring-2 ring-amber-300' : 'bg-amber-200'}`} />
+                  <div className={`h-full transition-all ${currentCategory.urgencyLevel === 'stage1' ? 'bg-orange-500 ring-2 ring-orange-300' : 'bg-orange-200'}`} />
+                  <div className={`h-full transition-all ${currentCategory.urgencyLevel === 'stage2' ? 'bg-red-500 ring-2 ring-red-300' : 'bg-red-200'}`} />
+                  <div className={`h-full transition-all ${currentCategory.urgencyLevel === 'crisis' ? 'bg-rose-600 ring-2 ring-rose-400 animate-pulse' : 'bg-rose-200'}`} />
                 </div>
               </div>
 
@@ -320,7 +384,7 @@ export default function HomePage() {
                   currentCategory.borderColor
                 } ${currentCategory.bgColor} ${
                   currentCategory.urgencyLevel === "crisis"
-                    ? "emergency-alert-glow"
+                    ? "emergency-pulse-active"
                     : ""
                 }`}
               >
@@ -341,7 +405,7 @@ export default function HomePage() {
 
                 <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs">
                   <strong className="text-slate-900 font-bold block mb-0.5">
-                    التوجيه الطبي:
+                    التوجيه والإجراء الطبي:
                   </strong>
                   <p className="text-slate-600 leading-relaxed">
                     {currentCategory.clinicalAction}
@@ -353,35 +417,35 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleAskAboutReading}
-                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-800 hover:to-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/20 active:scale-[0.99] transition-all cursor-pointer"
+                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-800 hover:to-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/25 active:scale-[0.99] transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-cyan-200" />
                 <span>اسأل المساعد الذكي عن قراءتي ({systolic}/{diastolic})</span>
               </button>
             </div>
 
-            {/* 2. Official Classification Guide (Mini Table) */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 text-xs">
+            {/* 2. Official Classification Guide (Mini Reference) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 text-xs">
               <h3 className="font-bold text-slate-900 mb-2.5 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-blue-600" />
-                <span>دليل تصنيف الضغط (AHA & WHO)</span>
+                <span>جدول تصنيف الضغط (AHA & WHO)</span>
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {BP_CATEGORIES.map((cat) => (
                   <div
                     key={cat.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors"
+                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: cat.color }}
                       />
-                      <span className="font-bold text-slate-800">
+                      <span className="font-bold text-slate-800 text-[11px]">
                         {cat.nameArabic}
                       </span>
                     </div>
-                    <span className="font-mono text-slate-500 font-medium text-[11px] dir-ltr text-left">
+                    <span className="font-mono text-slate-500 font-semibold text-[11px] dir-ltr text-left">
                       {cat.systolicRange} / {cat.diastolicRange}
                     </span>
                   </div>
@@ -390,16 +454,16 @@ export default function HomePage() {
             </div>
 
             {/* 3. Emergency Warning Signs Card */}
-            <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 text-xs text-rose-900">
-              <div className="flex items-center gap-2 font-bold mb-1.5 text-rose-800">
+            <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 text-xs text-rose-950">
+              <div className="flex items-center gap-2 font-bold mb-1.5 text-rose-900">
                 <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>أعراض الخطر التي تستوجب الطوارئ</span>
+                <span>أعراض الخطر التي تستوجب الطوارئ فوراً</span>
               </div>
-              <ul className="space-y-1 pr-4 list-disc text-rose-800/90 leading-relaxed font-medium">
-                <li>ضغط انقباضي أعلى من 180 أو انبساطي أعلى من 120.</li>
-                <li>ألم أو ضغط حاد في الصدر ينتشر للكتف أو الفك.</li>
-                <li>ضيق مفاجئ في التنفس أو صعوبة استنشاق الهواء.</li>
-                <li>خدر، ضعف مفاجئ في أحد جانبي الجسم، أو تلعثم بالنطق.</li>
+              <ul className="space-y-1 pr-4 list-disc text-rose-900/90 leading-relaxed font-medium">
+                <li>قراءة انقباضي أعلى من 180 أو انبساطي أعلى من 120.</li>
+                <li>ألم أو ثقل عاصر في منتصف الصدر ينتشر للكتف أو الفك.</li>
+                <li>ضيق مفاجئ وحاد في التنفس.</li>
+                <li>تنميل، خدر بالوجه أو صعوبة في نطق الكلمات.</li>
               </ul>
             </div>
           </aside>
@@ -409,18 +473,18 @@ export default function HomePage() {
           {/* ============================================================== */}
           <div className="lg:col-span-8 space-y-4 order-1 lg:order-2">
             {/* Quick Questions Component (15 categorized questions) */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
                     <HelpCircle className="w-4 h-4" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    الأسئلة الطبية السريعة (اختر موضوعاً للإرسال الفوري)
+                    شريط الأسئلة الطبية السريعة (اختر موضوعاً للإرسال الفوري)
                   </h3>
                 </div>
-                <span className="text-[11px] text-slate-500 font-semibold">
-                  15 سؤالاً جاهزاً
+                <span className="text-[11px] text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-full font-bold">
+                  15 سؤالاً معتمداً
                 </span>
               </div>
 
@@ -460,7 +524,7 @@ export default function HomePage() {
                     disabled={isLoading}
                     className="text-right text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200/90 text-slate-700 px-3 py-2 rounded-xl transition-all flex items-center justify-between gap-2 group cursor-pointer active:scale-[0.98] disabled:opacity-50"
                   >
-                    <span className="line-clamp-1">{q}</span>
+                    <span className="line-clamp-1 font-medium">{q}</span>
                     <ArrowUpRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-blue-600 shrink-0" />
                   </button>
                 ))}
@@ -468,33 +532,33 @@ export default function HomePage() {
             </div>
 
             {/* Smart Medical Chatbot Box */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md flex flex-col h-[650px] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col h-[650px] overflow-hidden">
               {/* Chatbot Header */}
-              <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
+              <div className="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="relative w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-cyan-600 text-white flex items-center justify-center shadow-xs shrink-0">
                     <Stethoscope className="w-5 h-5" />
                     <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>المستشار الطبي الافتراضي</span>
-                      <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        نشط الآن
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                        متصل وجاهز
                       </span>
                     </h3>
                     <p className="text-[11px] text-slate-500 font-medium">
-                      إجابات معتمدة وفق البروتوكولات الإكلينيكية الرسمية
+                      إجابات معتمدة وفق البروتوكولات الإكلينيكية الرسمية (WHO & Mayo Clinic & AHA)
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={handleClearChat}
                     title="مسح المحادثة وبدء استشارة جديدة"
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -528,14 +592,14 @@ export default function HomePage() {
                       <div
                         className={`max-w-[85%] sm:max-w-[80%] rounded-2xl p-4 shadow-2xs ${
                           isUser
-                            ? "bg-blue-600 text-white rounded-tl-none"
+                            ? "bg-blue-600 text-white rounded-tl-none font-medium"
                             : msg.isEmergency
                             ? "bg-rose-50 border-2 border-rose-400 text-slate-900 rounded-tr-none"
-                            : "bg-white border border-slate-200/90 text-slate-900 rounded-tr-none"
+                            : "bg-white border border-slate-200 text-slate-900 rounded-tr-none"
                         }`}
                       >
                         {isUser ? (
-                          <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
                             {msg.content}
                           </p>
                         ) : (
@@ -544,13 +608,34 @@ export default function HomePage() {
 
                             {/* Medical Credential Badge Under Every Answer */}
                             <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-                              <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50/90 px-2.5 py-1 rounded-full border border-blue-200/60">
+                              <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
                                 <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                                 <span>مُدعم بمصادر WHO & Mayo Clinic</span>
                               </span>
-                              <span className="text-[10px] text-slate-400 font-medium">
-                                {msg.timestamp}
-                              </span>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(msg.id, msg.content)}
+                                  className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 px-2 py-0.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+                                  title="نسخ الإجابة"
+                                >
+                                  {copiedId === msg.id ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                      <span className="text-emerald-600 font-bold">تم النسخ</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>نسخ</span>
+                                    </>
+                                  )}
+                                </button>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {msg.timestamp}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -566,9 +651,9 @@ export default function HomePage() {
                       <Bot className="w-4 h-4" />
                     </div>
                     <div className="bg-white border border-slate-200 rounded-2xl rounded-tr-none p-4 shadow-2xs">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                      <div className="flex items-center gap-2 text-slate-600 text-xs font-semibold">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                        <span>جاري مراجعة البروتوكولات الطبية وتحليل الإجابة...</span>
+                        <span>جاري مراجعة البروتوكولات الإكلينيكية وصياغة التوجيه الطبي...</span>
                       </div>
                     </div>
                   </div>
@@ -578,7 +663,7 @@ export default function HomePage() {
               </div>
 
               {/* Chat Input Bar */}
-              <div className="p-3 sm:p-4 bg-white border-t border-slate-200/80">
+              <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -593,7 +678,7 @@ export default function HomePage() {
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="اكتب سؤالك الطبي هنا (مثال: ما تأثير القهوة على الضغط؟ أو قراءتي 135/85)..."
                     disabled={isLoading}
-                    className="flex-1 px-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/50 disabled:opacity-60 placeholder:text-slate-400"
+                    className="flex-1 px-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 bg-slate-50/70 disabled:opacity-60 placeholder:text-slate-400"
                   />
 
                   <button
@@ -607,7 +692,7 @@ export default function HomePage() {
                 </form>
 
                 <p className="mt-2 text-center text-[10px] text-slate-400">
-                  تنبيه طبي: نبض الأمان هو أداة ذكاء اصطناعي تثقيفية موثوقة لمساعدة المرضى، ولا تُعد بديلاً عن الفحص السريري أو استشارة الطبيب المعالج.
+                  ⚠️ إخلاء مسؤولية طبية: منصة نبض الأمان تقدم معلومات تثقيفية قائمة على أدلة منظمة الصحة العالمية ومايو كلينك، ولا تغني عن استشارة الطبيب المعالج أو التشخيص السريري.
                 </p>
               </div>
             </div>
@@ -618,11 +703,11 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="mt-8 border-t border-slate-200 bg-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 space-y-2">
-          <p className="font-semibold text-slate-700">
+          <p className="font-bold text-slate-800 text-sm">
             مشروع "نبض الأمان" — المساعد الطبي الذكي لارتفاع ضغط الدم (Hypertension AI Assistant)
           </p>
-          <p>
-            مطور باللغة العربية لدعم مرضى الضغط ورفع الوعي الصحي المجتمعي وفق أحدث إرشادات منظمة الصحة العالمية (WHO) وجمعية القلب الأمريكية (AHA) ومايو كلينك.
+          <p className="max-w-2xl mx-auto leading-relaxed">
+            تم التطوير باستخدام Next.js (App Router) و Tailwind CSS و Lucide Icons لدعم مسابقات الابتكار الطلابي، مع الالتزام الصارم بإرشادات منظمة الصحة العالمية (WHO) وجمعية القلب الأمريكية (AHA) ومايو كلينك (Mayo Clinic).
           </p>
         </div>
       </footer>

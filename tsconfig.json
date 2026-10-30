@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@google/generative-ai": ["./src/lib/gemini.ts"]
     }
   },
   "include": [
