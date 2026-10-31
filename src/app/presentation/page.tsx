@@ -30,7 +30,14 @@ import {
   Laptop,
   Pill,
   Salad,
-  Info
+  Info,
+  Play,
+  Pause,
+  LayoutGrid,
+  X,
+  Volume2,
+  VolumeX,
+  Sliders
 } from "lucide-react";
 import { classifyBloodPressure, BloodPressureCategory } from "@/data/medical-knowledge";
 
@@ -152,6 +159,11 @@ export default function PresentationPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  const [isAutoplaying, setIsAutoplaying] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isGridModalOpen, setIsGridModalOpen] = useState(false);
+  const [autoplaySecondsLeft, setAutoplaySecondsLeft] = useState(10);
+
   // Live Demo interactive state
   const [demoSys, setDemoSys] = useState<number | "">(135);
   const [demoDia, setDemoDia] = useState<number | "">(85);
@@ -162,12 +174,53 @@ export default function PresentationPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const TOTAL_SLIDES = 12;
 
+  // Gentle synthesized audio chime on slide transition (Web Audio API)
+  const playSlideSound = () => {
+    if (!soundEnabled || typeof window === "undefined") return;
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.025, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch {
+      // AudioContext blocked or muted
+    }
+  };
+
   // Handle classification change
   useEffect(() => {
     const s = Number(demoSys) || 0;
     const d = Number(demoDia) || 0;
     setDemoCategory(classifyBloodPressure(s, d));
   }, [demoSys, demoDia]);
+
+  // Autoplay slideshow timer
+  useEffect(() => {
+    if (!isAutoplaying) return;
+    setAutoplaySecondsLeft(10);
+    const interval = setInterval(() => {
+      setAutoplaySecondsLeft((prev) => {
+        if (prev <= 1) {
+          goToSlide((currentSlide + 1) % TOTAL_SLIDES, "next");
+          return 10;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isAutoplaying, currentSlide]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -191,6 +244,14 @@ export default function PresentationPage() {
       } else if (e.key.toLowerCase() === "f") {
         e.preventDefault();
         toggleFullscreen();
+      } else if (e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        setIsAutoplaying((prev) => !prev);
+      } else if (e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        setIsGridModalOpen((prev) => !prev);
+      } else if (e.key === "Escape") {
+        setIsGridModalOpen(false);
       }
     };
 
@@ -212,6 +273,7 @@ export default function PresentationPage() {
     const dir = direction || (targetIndex > currentSlide ? "next" : "prev");
     setSlideDirection(dir);
     setCurrentSlide(targetIndex);
+    playSlideSound();
   };
 
   const nextSlide = () => {
@@ -371,6 +433,55 @@ export async function POST(req: Request) {
             </button>
           </div>
 
+          {/* Slides Grid Modal Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsGridModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700 hover:border-slate-600 cursor-pointer"
+            title="Open 12-Slide Overview Grid (G)"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xl:inline">All Slides</span>
+          </button>
+
+          {/* Autoplay Slideshow Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsAutoplaying((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
+              isAutoplaying
+                ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/60 shadow-xs shadow-emerald-500/30"
+                : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-slate-600"
+            }`}
+            title="Toggle Slideshow Autoplay (P)"
+          >
+            {isAutoplaying ? (
+              <>
+                <Pause className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span className="font-mono font-bold text-emerald-300">{autoplaySecondsLeft}s</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 text-slate-300" />
+                <span className="hidden sm:inline">Autoplay</span>
+              </>
+            )}
+          </button>
+
+          {/* Audio Chime Mute/Unmute */}
+          <button
+            type="button"
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
+            title={soundEnabled ? "Mute Slide Sound Chimes" : "Enable Slide Sound Chimes"}
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4 text-teal-400" />
+            ) : (
+              <VolumeX className="w-4 h-4 text-slate-500" />
+            )}
+          </button>
+
           <div className="h-4 w-px bg-slate-700" />
 
           {/* Print / Save as PDF */}
@@ -417,7 +528,7 @@ export async function POST(req: Request) {
         {/* Subtle Ambient Radial Lighting */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-gradient-to-tr from-teal-500/10 via-sky-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-6xl aspect-[16/10] sm:aspect-[16/9] min-h-[600px] bg-slate-50 text-slate-900 rounded-3xl shadow-2xl border border-slate-700/60 overflow-hidden flex flex-col relative print:border-none print:shadow-none print:min-h-0 print:aspect-auto print:rounded-none z-10">
+        <div className="slide-viewport w-full max-w-6xl aspect-[16/10] sm:aspect-[16/9] min-h-[600px] bg-slate-50 text-slate-900 rounded-3xl shadow-2xl border border-slate-700/60 overflow-hidden flex flex-col relative print:border-none print:shadow-none print:min-h-0 print:aspect-auto print:rounded-none z-10">
           
           {/* SLIDE TOP META HEADER */}
           <div className="px-6 sm:px-8 pt-4 pb-3 border-b border-slate-200/90 flex items-center justify-between bg-white/90 backdrop-blur-xs">
@@ -1221,7 +1332,7 @@ const model = genAI.getGenerativeModel({
             {/* SLIDE 11: Interactive Live Simulator */}
             {/* ============================================================== */}
             {currentSlide === 10 && (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between stagger-1">
                   <div>
                     <div className="text-xs font-black text-teal-700 mb-0.5 uppercase tracking-wide">
@@ -1242,40 +1353,93 @@ const model = genAI.getGenerativeModel({
                 </div>
 
                 {/* Embedded Live Checker Box */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md space-y-4 stagger-2">
-                  <div className="text-xs font-bold text-slate-600">
-                    Input sample systolic and diastolic readings to observe immediate clinical classification & emergency triage:
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-md space-y-3.5 stagger-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                    <span className="font-bold text-slate-600">Quick Clinical Presets for Testing:</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { label: "Normal", sys: 115, dia: 75, cls: "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100" },
+                        { label: "Elevated", sys: 125, dia: 78, cls: "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100" },
+                        { label: "Stage 1", sys: 135, dia: 85, cls: "bg-orange-50 text-orange-800 border-orange-300 hover:bg-orange-100" },
+                        { label: "Stage 2", sys: 155, dia: 95, cls: "bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100" },
+                        { label: "Crisis 🚨", sys: 195, dia: 125, cls: "bg-red-100 text-red-900 border-red-400 hover:bg-red-200 font-bold" },
+                      ].map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setDemoSys(preset.sys);
+                            setDemoDia(preset.dia);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${preset.cls}`}
+                        >
+                          {preset.label} ({preset.sys}/{preset.dia})
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                        Systolic (SYS mmHg) - الانقباضي
-                      </label>
+                  {/* Dual Numeric Inputs with Sliders */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-slate-700">
+                          Systolic (SYS mmHg) - الانقباضي
+                        </label>
+                        <span className="text-lg font-black text-teal-700 font-mono">
+                          {demoSys || 0}
+                        </span>
+                      </div>
                       <input
-                        type="number"
-                        value={demoSys}
-                        onChange={(e) => setDemoSys(e.target.value === "" ? "" : Number(e.target.value))}
-                        className="w-full text-center text-2xl font-black text-slate-900 font-mono bg-slate-50 border-2 border-slate-300 rounded-xl py-2 focus:border-teal-500 focus:outline-hidden"
-                        placeholder="120"
+                        type="range"
+                        min="70"
+                        max="220"
+                        value={Number(demoSys) || 70}
+                        onChange={(e) => setDemoSys(Number(e.target.value))}
+                        className="w-full accent-teal-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg appearance-none"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                        Diastolic (DIA mmHg) - الانبساطي
-                      </label>
+
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-slate-700">
+                          Diastolic (DIA mmHg) - الانبساطي
+                        </label>
+                        <span className="text-lg font-black text-sky-700 font-mono">
+                          {demoDia || 0}
+                        </span>
+                      </div>
                       <input
-                        type="number"
-                        value={demoDia}
-                        onChange={(e) => setDemoDia(e.target.value === "" ? "" : Number(e.target.value))}
-                        className="w-full text-center text-2xl font-black text-slate-900 font-mono bg-slate-50 border-2 border-slate-300 rounded-xl py-2 focus:border-teal-500 focus:outline-hidden"
-                        placeholder="80"
+                        type="range"
+                        min="40"
+                        max="140"
+                        value={Number(demoDia) || 40}
+                        onChange={(e) => setDemoDia(Number(e.target.value))}
+                        className="w-full accent-sky-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg appearance-none"
                       />
+                    </div>
+                  </div>
+
+                  {/* Visual 5-Tier Color Gauge Meter */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                      <span>Normal (&lt;120)</span>
+                      <span>Elevated (120-129)</span>
+                      <span>Stage 1 (130-139)</span>
+                      <span>Stage 2 (≥140)</span>
+                      <span className="text-rose-600">Crisis (&gt;180)</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-1.5 h-3 rounded-full overflow-hidden p-0.5 bg-slate-100 border border-slate-200">
+                      <div className={`rounded-full transition-all duration-300 ${demoCategory.id === "normal" ? "bg-emerald-500 shadow-xs shadow-emerald-400 ring-2 ring-emerald-300 scale-y-110" : "bg-emerald-200 opacity-60"}`} />
+                      <div className={`rounded-full transition-all duration-300 ${demoCategory.id === "elevated" ? "bg-amber-400 shadow-xs shadow-amber-400 ring-2 ring-amber-300 scale-y-110" : "bg-amber-200 opacity-60"}`} />
+                      <div className={`rounded-full transition-all duration-300 ${demoCategory.id === "stage1" ? "bg-orange-500 shadow-xs shadow-orange-400 ring-2 ring-orange-300 scale-y-110" : "bg-orange-200 opacity-60"}`} />
+                      <div className={`rounded-full transition-all duration-300 ${demoCategory.id === "stage2" ? "bg-rose-500 shadow-xs shadow-rose-400 ring-2 ring-rose-300 scale-y-110" : "bg-rose-200 opacity-60"}`} />
+                      <div className={`rounded-full transition-all duration-300 ${demoCategory.id === "crisis" ? "bg-red-700 shadow-xs shadow-red-500 ring-2 ring-red-400 animate-pulse scale-y-110" : "bg-red-200 opacity-60"}`} />
                     </div>
                   </div>
 
                   {/* Real-Time Live Result Banner */}
-                  <div className={`p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                  <div className={`p-3.5 rounded-2xl border-2 transition-all flex flex-col sm:flex-row items-center justify-between gap-3 ${
                     demoCategory.urgencyLevel === "crisis"
                       ? "bg-rose-50 border-rose-500 text-rose-950 animate-pulse"
                       : "bg-slate-50 border-slate-300 text-slate-900"
@@ -1494,16 +1658,124 @@ const model = genAI.getGenerativeModel({
           F
         </kbd>
         <span>Fullscreen</span>
+        <span className="text-slate-600">|</span>
+        <kbd className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 font-mono text-[10px]">
+          P
+        </kbd>
+        <span>Autoplay</span>
+        <span className="text-slate-600">|</span>
+        <kbd className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 font-mono text-[10px]">
+          G
+        </kbd>
+        <span>All Slides</span>
       </footer>
 
       {/* ------------------------------------------------------------- */}
-      {/* RICH CSS KEYFRAMES & TRANSITIONS */}
+      {/* 12-SLIDE QUICK JUMP GRID MODAL */}
+      {/* ------------------------------------------------------------- */}
+      {isGridModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setIsGridModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl max-w-4xl w-full p-6 text-slate-100 max-h-[90vh] overflow-y-auto space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <LayoutGrid className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">Presentation Slide Index</h3>
+                  <p className="text-[11px] text-slate-400">Click any slide to jump instantly • Northern Technical University (NTU)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGridModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {SLIDE_TITLES.map((title, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    goToSlide(idx);
+                    setIsGridModalOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 ${
+                    currentSlide === idx
+                      ? "bg-teal-950/80 border-teal-400 shadow-md shadow-teal-500/20 ring-2 ring-teal-400/40"
+                      : "bg-slate-800/80 border-slate-700/80 hover:bg-slate-800 hover:border-slate-500"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="w-6 h-6 rounded-lg bg-slate-900 text-teal-400 font-mono text-[11px] font-black flex items-center justify-center border border-slate-700">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    {currentSlide === idx && (
+                      <span className="text-[9px] font-bold bg-teal-500 text-slate-950 px-1.5 py-0.5 rounded-full uppercase">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs font-bold text-slate-200 line-clamp-2 mt-1">
+                    {title}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* RICH CSS KEYFRAMES & 3D HARDWARE-ACCELERATED TRANSITIONS */}
       {/* ------------------------------------------------------------- */}
       <style jsx global>{`
-        @keyframes slideInFromRight {
+        @keyframes slideInFromRight3D {
           0% {
             opacity: 0;
-            transform: translate3d(40px, 0, 0) scale(0.98);
+            transform: translate3d(55px, 0, 0) scale(0.96) rotateY(2deg);
+            filter: blur(4px);
+          }
+          65% {
+            filter: blur(0px);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
+            filter: blur(0px);
+          }
+        }
+
+        @keyframes slideInFromLeft3D {
+          0% {
+            opacity: 0;
+            transform: translate3d(-55px, 0, 0) scale(0.96) rotateY(-2deg);
+            filter: blur(4px);
+          }
+          65% {
+            filter: blur(0px);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
+            filter: blur(0px);
+          }
+        }
+
+        @keyframes fadeInUpScale {
+          0% {
+            opacity: 0;
+            transform: translate3d(0, 18px, 0) scale(0.97);
           }
           100% {
             opacity: 1;
@@ -1511,44 +1783,32 @@ const model = genAI.getGenerativeModel({
           }
         }
 
-        @keyframes slideInFromLeft {
-          0% {
-            opacity: 0;
-            transform: translate3d(-40px, 0, 0) scale(0.98);
-          }
-          100% {
-            opacity: 1;
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-        }
-
-        @keyframes fadeInUp {
-          0% {
-            opacity: 0;
-            transform: translate3d(0, 14px, 0);
-          }
-          100% {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-          }
+        .slide-viewport {
+          perspective: 1200px;
+          transform-style: preserve-3d;
         }
 
         .slide-enter-next {
-          animation: slideInFromRight 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: slideInFromRight3D 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity, filter;
         }
 
         .slide-enter-prev {
-          animation: slideInFromLeft 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: slideInFromLeft3D 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity, filter;
         }
 
         .stagger-1 {
-          animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+          animation: fadeInUpScale 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
         }
         .stagger-2 {
-          animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+          animation: fadeInUpScale 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
         }
         .stagger-3 {
-          animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+          animation: fadeInUpScale 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both;
+        }
+        .stagger-4 {
+          animation: fadeInUpScale 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
         }
 
         @media print {

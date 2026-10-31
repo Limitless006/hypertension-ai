@@ -6,8 +6,9 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    cpus: 1,
+  webpack: (config) => {
+    config.cache = false;
+    return config;
   },
 };
 
