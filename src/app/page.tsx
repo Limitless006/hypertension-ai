@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   HeartPulse,
   Activity,
@@ -27,7 +28,8 @@ import {
   ExternalLink,
   X,
   ChevronRight,
-  Info
+  Info,
+  Presentation
 } from "lucide-react";
 import {
   BP_CATEGORIES,
@@ -432,6 +434,16 @@ export default function HomePage() {
               <span>متصل • مُغذى بالمصادر الـ 6 المعتمدة (WHO & AHA & ESC & NIH & Mayo & MOH Iraq)</span>
             </div>
 
+            {/* Presentation Mode Button */}
+            <Link
+              href="/presentation"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-bold bg-gradient-to-r from-teal-600 via-teal-700 to-sky-700 hover:from-teal-700 hover:to-sky-800 text-white shadow-md shadow-teal-700/20 border border-teal-400/30 transition-all cursor-pointer active:scale-95 text-center min-h-[38px] sm:min-h-0"
+              title="عرض المسابقة التفاعلي - 12 شريحة للجنة التحكيم"
+            >
+              <Presentation className="w-3.5 h-3.5 text-teal-200 shrink-0" />
+              <span className="truncate">عرض المسابقة (Presentation Mode)</span>
+            </Link>
+
             {/* Verified Sources Modal Trigger Button */}
             <button
               type="button"
@@ -458,6 +470,14 @@ export default function HomePage() {
         {/* Mobile Quick Navigation Bar (Integrated inside sticky header for zero desync and perfect mobile UX) */}
         <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 backdrop-blur-sm px-3.5 py-1.5 w-full">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-scroll py-0.5 max-w-7xl mx-auto">
+            <Link
+              href="/presentation"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-gradient-to-r from-teal-600 to-sky-600 text-white shadow-xs whitespace-nowrap active:scale-95 shrink-0 cursor-pointer min-h-[36px]"
+              title="عرض المسابقة"
+            >
+              <Presentation className="w-3.5 h-3.5 text-teal-100" />
+              <span>🎬 عرض المسابقة</span>
+            </Link>
             <button
               type="button"
               onClick={() => scrollToSection("checker-section")}
